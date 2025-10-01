@@ -275,6 +275,7 @@ class ScreenCaptureService : Service() {
                     
                     Log.d(TAG, "Suspicious content detected: ${analysisResult.description}")
                 }
+                Unit // Explicit Unit return to avoid 'if' expression error
             } catch (e: Exception) {
                 Log.e(TAG, "Error analyzing content", e)
             }
