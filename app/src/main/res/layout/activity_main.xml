@@ -123,7 +123,45 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <!-- First row with History and Pair buttons -->
+        <!-- Recent Logs Preview Section -->
+        <TextView
+            android:id="@+id/tvRecentLogsTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/recent_logs_title"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:layout_marginBottom="8dp" />
+
+        <ScrollView
+            android:id="@+id/scrollViewRecentLogs"
+            android:layout_width="match_parent"
+            android:layout_height="120dp"
+            android:background="@drawable/log_preview_background"
+            android:padding="8dp"
+            android:layout_marginBottom="16dp">
+
+            <LinearLayout
+                android:id="@+id/layoutRecentLogs"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tvNoLogs"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/no_logs_yet"
+                    android:textSize="14sp"
+                    android:textColor="@android:color/darker_gray"
+                    android:gravity="center"
+                    android:visibility="visible" />
+
+            </LinearLayout>
+
+        </ScrollView>
+
+        <!-- Buttons row -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -131,12 +169,13 @@
             android:layout_marginBottom="8dp">
 
             <Button
-                android:id="@+id/btnViewHistory"
+                android:id="@+id/btnViewLogs"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="@string/btn_view_history"
-                android:layout_marginEnd="4dp" />
+                android:text="@string/btn_view_logs"
+                android:layout_marginEnd="4dp"
+                style="@style/Widget.Material3.Button.OutlinedButton" />
 
             <Button
                 android:id="@+id/btnPairDevice"
@@ -147,14 +186,6 @@
                 android:layout_marginStart="4dp" />
 
         </LinearLayout>
-
-        <!-- Second row with View Logs button -->
-        <Button
-            android:id="@+id/btnViewLogs"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/btn_view_logs"
-            style="@style/Widget.Material3.Button.OutlinedButton" />
 
     </LinearLayout>
 

@@ -14,7 +14,8 @@
     <string name="crop_bottom">Analizuj tylko dolną połowę ekranu</string>
     <string name="local_analysis">Analiza lokalna (bez wysyłania do chmury)</string>
     <string name="save_screenshots">Zapisuj zrzuty ekranu</string>
-    <string name="btn_view_history">Historia</string>
+    <string name="recent_logs_title">Ostatnie zdarzenia</string>
+    <string name="no_logs_yet">Brak zdarzeń do wyświetlenia</string>
     <string name="btn_pair_device">Parowanie</string>
     
     <!-- Event History Activity -->

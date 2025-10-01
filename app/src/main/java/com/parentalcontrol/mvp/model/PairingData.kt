@@ -31,6 +31,9 @@ data class PairingData(
     @SerializedName("timestamp")
     val timestamp: Long = System.currentTimeMillis(),
     
+    @SerializedName("family_id")
+    val familyId: String = UUID.randomUUID().toString(),
+    
     @SerializedName("wifi_ssid")
     val wifiSSID: String? = null
 )
@@ -42,6 +45,26 @@ enum class DeviceType {
     @SerializedName("child")
     CHILD
 }
+
+/**
+ * Zaproszenie do rodziny do szybkiego współdzielenia (multi-rodzic/multi-dziecko)
+ */
+data class FamilyInvite(
+    @SerializedName("type")
+    val type: String = "family_invite",
+    
+    @SerializedName("family_id")
+    val familyId: String,
+    
+    @SerializedName("created_by_name")
+    val createdByName: String,
+    
+    @SerializedName("created_by_type")
+    val createdByType: DeviceType,
+    
+    @SerializedName("timestamp")
+    val timestamp: Long = System.currentTimeMillis()
+)
 
 /**
  * Status parowania

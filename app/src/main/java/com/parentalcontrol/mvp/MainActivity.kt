@@ -20,14 +20,25 @@ import com.parentalcontrol.mvp.databinding.ActivityMainBinding
 import com.parentalcontrol.mvp.model.DeviceType
 import com.parentalcontrol.mvp.service.ScreenCaptureService
 import com.parentalcontrol.mvp.utils.PreferencesManager
+import com.parentalcontrol.mvp.utils.FileLogger
+import kotlinx.coroutines.*
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.*
+import android.view.View
+import android.widget.LinearLayout
+import android.widget.ScrollView
 
 class MainActivity : AppCompatActivity() {
     
     private lateinit var binding: ActivityMainBinding
     private lateinit var mediaProjectionManager: MediaProjectionManager
     private lateinit var prefsManager: PreferencesManager
+    private lateinit var fileLogger: FileLogger
     
     private var isServiceRunning = false
+    private val logUpdateScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+    private var logUpdateJob: Job? = null
     
     companion object {
         const val REQUEST_MEDIA_PROJECTION = 1001
@@ -56,10 +67,12 @@ class MainActivity : AppCompatActivity() {
         
         prefsManager = PreferencesManager(this)
         mediaProjectionManager = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
+        fileLogger = FileLogger(this)
         
         setupUI()
         checkPermissions()
         updateServiceStatus()
+        startLogUpdates()
     }
     
     private fun setupUI() {
@@ -106,11 +119,6 @@ class MainActivity : AppCompatActivity() {
             switchSaveScreenshots.isChecked = prefsManager.isSaveScreenshotsEnabled()
             switchSaveScreenshots.setOnCheckedChangeListener { _, isChecked ->
                 prefsManager.setSaveScreenshotsEnabled(isChecked)
-            }
-            
-            // Historia zdarzeń
-            btnViewHistory.setOnClickListener {
-                startActivity(Intent(this@MainActivity, EventHistoryActivity::class.java))
             }
             
             // Podgląd logów
@@ -263,5 +271,112 @@ class MainActivity : AppCompatActivity() {
                 Toast.makeText(this, R.string.permission_rationale_message, Toast.LENGTH_LONG).show()
             }
         }
+    }
+    
+    /**
+     * Rozpoczyna okresowe aktualizacje podglądu logów
+     */
+    private fun startLogUpdates() {
+        logUpdateJob?.cancel()
+        logUpdateJob = logUpdateScope.launch {
+            while (isActive) {
+                updateLogPreview()
+                delay(3000) // Aktualizuj co 3 sekundy
+            }
+        }
+    }
+    
+    /**
+     * Ładuje 3 najnowsze logi z pliku
+     */
+    private suspend fun loadRecentLogs(): List<String> = withContext(Dispatchers.IO) {
+        try {
+            val logFile = File(getExternalFilesDir(null), "monitoring_logs.txt")
+            if (!logFile.exists()) {
+                return@withContext emptyList()
+            }
+            
+            val lines = logFile.readLines()
+            val recentLogs = lines.takeLast(3).reversed() // 3 najnowsze, od najnowszego
+            
+            // Formatuj logi dla wyświetlenia
+            recentLogs.map { line ->
+                formatLogLine(line)
+            }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+    
+    /**
+     * Formatuje linię loga dla czytelnego wyświetlenia
+     */
+    private fun formatLogLine(line: String): String {
+        return try {
+            // Format loga: [timestamp] TYPE: message
+            val parts = line.split("] ", limit = 2)
+            if (parts.size >= 2) {
+                val timestamp = parts[0].replace("[", "")
+                val content = parts[1]
+                
+                // Skróć timestamp do godziny:minuta
+                val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
+                val shortTime = try {
+                    val fullTime = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).parse(timestamp)
+                    timeFormat.format(fullTime ?: Date())
+                } catch (e: Exception) {
+                    timestamp.substringAfter(" ").substringBefore(":")
+                }
+                
+                "$shortTime: $content"
+            } else {
+                line.take(60) + if (line.length > 60) "..." else ""
+            }
+        } catch (e: Exception) {
+            line.take(60) + if (line.length > 60) "..." else ""
+        }
+    }
+    
+    /**
+     * Aktualizuje podgląd logów w UI
+     */
+    private fun updateLogPreview() {
+        logUpdateScope.launch {
+            val recentLogs = loadRecentLogs()
+            
+            binding.apply {
+                if (recentLogs.isEmpty()) {
+                    tvNoLogs.visibility = View.VISIBLE
+                    layoutRecentLogs.removeAllViews()
+                    layoutRecentLogs.addView(tvNoLogs)
+                } else {
+                    tvNoLogs.visibility = View.GONE
+                    layoutRecentLogs.removeAllViews()
+                    
+                    recentLogs.forEach { logText ->
+                        val logView = android.widget.TextView(this@MainActivity).apply {
+                            text = logText
+                            textSize = 12f
+                            setTextColor(ContextCompat.getColor(this@MainActivity, android.R.color.black))
+                            setPadding(8, 4, 8, 4)
+                            maxLines = 2
+                            ellipsize = android.text.TextUtils.TruncateAt.END
+                        }
+                        layoutRecentLogs.addView(logView)
+                    }
+                    
+                    // Auto-scroll do dołu aby pokazać najnowsze logi
+                    scrollViewRecentLogs.post {
+                        scrollViewRecentLogs.fullScroll(ScrollView.FOCUS_DOWN)
+                    }
+                }
+            }
+        }
+    }
+    
+    override fun onDestroy() {
+        super.onDestroy()
+        logUpdateJob?.cancel()
+        logUpdateScope.cancel()
     }
 }
