@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/wizard_background"
+    android:padding="16dp">
+
+    <!-- Header with Progress -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:background="@drawable/wizard_header_background">
+
+        <!-- Progress Bar -->
+        <ProgressBar
+            android:id="@+id/progressBar"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="8dp"
+            android:layout_marginBottom="16dp"
+            android:progressTint="@color/wizard_progress_color"
+            android:progressBackgroundTint="@color/wizard_progress_background" />
+
+        <!-- Step Title -->
+        <TextView
+            android:id="@+id/stepTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Step Title"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:textColor="@color/wizard_title_color"
+            android:gravity="center"
+            android:layout_marginBottom="8dp" />
+
+        <!-- Step Description -->
+        <TextView
+            android:id="@+id/stepDescription"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Step description goes here"
+            android:textSize="16sp"
+            android:textColor="@color/wizard_description_color"
+            android:gravity="center"
+            android:layout_marginBottom="16dp" />
+
+    </LinearLayout>
+
+    <!-- Main Content Container -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:id="@+id/stepContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp" />
+
+    </ScrollView>
+
+    <!-- Navigation Buttons -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="16dp"
+        android:background="@drawable/wizard_footer_background">
+
+        <!-- Skip Button -->
+        <Button
+            android:id="@+id/skipButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="⏭️ Pomiń"
+            android:textSize="14sp"
+            android:layout_marginEnd="8dp"
+            style="@style/WizardButtonSecondary" />
+
+        <!-- Back Button -->
+        <Button
+            android:id="@+id/backButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="⬅️ Wstecz"
+            android:textSize="14sp"
+            android:layout_marginEnd="8dp"
+            style="@style/WizardButtonSecondary" />
+
+        <!-- Next Button -->
+        <Button
+            android:id="@+id/nextButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="2"
+            android:text="➡️ Dalej"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            style="@style/WizardButtonPrimary" />
+
+    </LinearLayout>
+
+</LinearLayout>

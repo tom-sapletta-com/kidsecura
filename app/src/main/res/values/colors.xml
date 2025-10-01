@@ -68,6 +68,13 @@
     <color name="severity_medium">#FF9800</color>
     <color name="severity_low">#4CAF50</color>
     
+    <!-- Pairing Wizard colors -->
+    <color name="wizard_background">#F5F5F5</color>
+    <color name="wizard_progress_color">#4CAF50</color>
+    <color name="wizard_progress_background">#E0E0E0</color>
+    <color name="wizard_title_color">#2E7D32</color>
+    <color name="wizard_description_color">#616161</color>
+    
     <!-- Common colors -->
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
