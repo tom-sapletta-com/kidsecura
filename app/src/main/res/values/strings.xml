@@ -226,4 +226,30 @@
     
     <!-- Screen capture instruction -->
     <string name="screen_capture_instruction">Wybierz "Cały ekran" w następnym oknie, aby rozpocząć monitorowanie</string>
+    
+    <!-- Paired Devices -->
+    <string name="paired_devices_title">Sparowane Urządzenia</string>
+    <string name="devices_status">Status urządzeń</string>
+    <string name="devices_total">Wszystkich</string>
+    <string name="devices_active">Aktywnych</string>
+    <string name="devices_parents">Rodziców</string>
+    <string name="devices_children">Dzieci</string>
+    <string name="filter_active">Aktywne</string>
+    <string name="filter_parents">Rodzice</string>
+    <string name="filter_children">Dzieci</string>
+    <string name="no_paired_devices">Brak sparowanych urządzeń</string>
+    <string name="start_pairing_hint">Rozpocznij parowanie skanując kod QR</string>
+    <string name="add_device">Dodaj urządzenie</string>
+    <string name="edit_nickname">Edytuj nazwę</string>
+    <string name="remove_device">Usuń urządzenie</string>
+    <string name="ping_device">Sprawdź połączenie</string>
+    <string name="view_device_details">Zobacz szczegóły</string>
+    <string name="device_offline">Urządzenie offline</string>
+    <string name="device_connecting">Łączenie z urządzeniem...</string>
+    <string name="last_seen_now">Teraz</string>
+    <string name="last_seen_minutes">%d min temu</string>
+    <string name="last_seen_hours">%d godz. temu</string>
+    <string name="last_seen_days">%d dni temu</string>
+    <string name="paired_today">Dzisiaj</string>
+    <string name="paired_yesterday">Wczoraj</string>
 </resources>
