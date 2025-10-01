@@ -87,6 +87,21 @@ class ContentAnalyzer(private val context: Context) {
         }
     }
     
+    /**
+     * Analizuje tylko tekst bez przetwarzania obrazu - dla AccessibilityService
+     */
+    suspend fun analyzeTextOnly(text: String): AnalysisResult {
+        val textAnalysis = analyzeText(text)
+        
+        return AnalysisResult(
+            isSuspicious = textAnalysis.isSuspicious,
+            confidence = textAnalysis.score,
+            detectionType = textAnalysis.type,
+            description = "Wykryto: ${textAnalysis.keywords.joinToString(", ")}",
+            extractedText = text
+        )
+    }
+    
     suspend fun analyze(bitmap: Bitmap): AnalysisResult {
         // 1. Ekstrakcja tekstu (OCR)
         val extractedText = extractText(bitmap)

@@ -56,6 +56,9 @@
     <string name="service_started">Monitorowanie rozpoczęte</string>
     <string name="service_stopped">Monitorowanie zatrzymane</string>
     
+    <!-- AccessibilityService -->
+    <string name="accessibility_service_description">Dyskretne monitorowanie treści dla ochrony rodzicielskiej. Analizuje tekst na ekranie wszystkich aplikacji bez nagrywania ekranu.</string>
+    
     <!-- Errors -->
     <string name="error_generic">Wystąpił błąd. Spróbuj ponownie.</string>
     <string name="error_no_projection">Nie można uzyskać dostępu do ekranu</string>
