@@ -101,20 +101,25 @@ class PairingActivity : AppCompatActivity() {
     private fun generateQRCode() {
         lifecycleScope.launch {
             try {
+                Log.d(TAG, "Generowanie QR kodu dla typu urządzenia: $deviceType")
                 binding.statusText.text = getString(R.string.generating_qr_code)
                 showLoading(true)
                 
                 // Wygeneruj dane parowania dla tego urządzenia
                 val pairingData = qrCodeGenerator.generatePairingData(deviceType)
+                Log.d(TAG, "Dane parowania wygenerowane: $pairingData")
                 
                 if (pairingData != null) {
+                    Log.d(TAG, "Generowanie QR bitmap dla danych: ${pairingData.deviceName}, typ: ${pairingData.deviceType}")
                     // Wygeneruj bitmap QR kodu w wysokiej rozdzielczości dla pełnej szerokości ekranu
                     val qrBitmap = qrCodeGenerator.generateQRCode(pairingData, 1024, 1024)
+                    Log.d(TAG, "QR bitmap wygenerowany: ${qrBitmap != null}, rozmiar: ${qrBitmap?.width}x${qrBitmap?.height}")
                     
                     if (qrBitmap != null) {
                         // Wyświetl QR kod
                         binding.qrCodeImage.setImageBitmap(qrBitmap)
                         binding.statusText.text = getString(R.string.qr_code_ready)
+                        Log.d(TAG, "QR kod pomyślnie wyświetlony dla urządzenia ${deviceType}")
                         
                         // Pokaż szczegóły urządzenia
                         showDeviceDetails(pairingData)
@@ -124,7 +129,7 @@ class PairingActivity : AppCompatActivity() {
                         
                     } else {
                         binding.statusText.text = getString(R.string.error_generating_qr)
-                        Log.e(TAG, "Failed to generate QR code bitmap")
+                        Log.e(TAG, "Failed to generate QR code bitmap for device type: $deviceType")
                     }
                 } else {
                     binding.statusText.text = getString(R.string.error_device_info)
