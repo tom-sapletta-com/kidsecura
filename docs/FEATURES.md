@@ -40,6 +40,28 @@
 - ✅ **Alert History**: Complete log of all detected incidents
 - ✅ **Configurable Alert Levels**: Customize sensitivity and frequency
 
+## 📱 **NEW: Multi-Channel Messaging Integration**
+
+### **Telegram Bot Integration**
+- ✅ **Telegram Bot API**: Real-time alerts via custom Telegram bots
+- ✅ **Multiple Chat Support**: Send alerts to multiple Telegram chats simultaneously
+- ✅ **Rich Message Formatting**: Formatted alerts with emojis and incident details
+- ✅ **Bot Configuration UI**: Easy setup dialog for bot token and chat IDs
+- ✅ **Test Messaging**: Verify configuration with test messages
+- ✅ **Automatic Retry**: Failed messages automatically retry with exponential backoff
+
+### **WhatsApp Business Integration (Planned)**
+- 🔄 **WhatsApp Business API**: Alert distribution via WhatsApp Business
+- 🔄 **Multi-Recipient Support**: Send to multiple WhatsApp numbers
+- 🔄 **Business Account Setup**: Integration with WhatsApp Business verification
+
+### **Smart Alert Distribution**
+- ✅ **Priority-Based Filtering**: Only send alerts meeting priority threshold (LOW/MEDIUM/HIGH)
+- ✅ **Multiple Delivery Channels**: P2P + Telegram + WhatsApp for redundancy
+- ✅ **Message Queue Management**: Background processing with retry queue
+- ✅ **Delivery Status Tracking**: Monitor successful/failed message deliveries
+- ✅ **Configuration Persistence**: Save messaging settings between app sessions
+
 ### **Remote Monitoring Dashboard**
 - ✅ **Live Activity View**: See child's device activity in real-time
 - ✅ **Incident Timeline**: Chronological view of all detected events
