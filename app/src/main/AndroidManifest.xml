@@ -152,6 +152,14 @@
             android:theme="@style/AppTheme" />
 
         <activity
+            android:name=".KeywordsTesterActivity"
+            android:exported="false"
+            android:label="🔍 Tester słów kluczowych"
+            android:parentActivityName=".MainActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/AppTheme" />
+
+        <activity
             android:name=".PairingActivity"
             android:exported="false"
             android:label="@string/pairing_title"

@@ -75,11 +75,8 @@
     <color name="wizard_title_color">#2E7D32</color>
     <color name="wizard_description_color">#616161</color>
     
-    <!-- Status colors for Keywords Tester -->
-    <color name="status_safe">#4CAF50</color>
-    <color name="status_warning">#FF9800</color>
+    <!-- Additional status colors for Keywords Tester -->
     <color name="status_medium">#FF5722</color>
-    <color name="status_danger">#F44336</color>
     
     <!-- Common colors -->
     <color name="black">#FF000000</color>
