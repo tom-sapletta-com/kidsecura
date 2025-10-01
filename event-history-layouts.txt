@@ -1,0 +1,211 @@
+<!-- activity_event_history.xml -->
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:scrollbars="none">
+
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/chipGroup"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="8dp"
+            app:singleSelection="true">
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipAll"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Wszystkie"
+                android:checked="true"
+                app:chipBackgroundColor="@color/chip_background_color" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipUnreviewed"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Nieprzejrzane"
+                app:chipBackgroundColor="@color/chip_background_color" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipToday"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Dzisiaj"
+                app:chipBackgroundColor="@color/chip_background_color" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipWeek"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Ostatni tydzień"
+                app:chipBackgroundColor="@color/chip_background_color" />
+
+        </com.google.android.material.chip.ChipGroup>
+    </HorizontalScrollView>
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:padding="8dp" />
+
+        <TextView
+            android:id="@+id/tvEmptyState"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="Brak zdarzeń do wyświetlenia"
+            android:textSize="18sp"
+            android:visibility="gone" />
+
+    </FrameLayout>
+
+</LinearLayout>
+
+<!-- item_event.xml -->
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="4dp"
+    app:cardCornerRadius="8dp"
+    app:cardElevation="2dp">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="12dp">
+
+        <ImageView
+            android:id="@+id/ivThumbnail"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:scaleType="centerCrop"
+            android:visibility="gone"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent" />
+
+        <TextView
+            android:id="@+id/tvTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="12:34"
+            android:textSize="12sp"
+            android:textColor="@android:color/darker_gray"
+            app:layout_constraintStart_toEndOf="@id/ivThumbnail"
+            app:layout_constraintTop_toTopOf="parent"
+            android:layout_marginStart="8dp" />
+
+        <TextView
+            android:id="@+id/tvType"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Typ zagrożenia"
+            android:textStyle="bold"
+            android:textSize="14sp"
+            app:layout_constraintStart_toEndOf="@id/ivThumbnail"
+            app:layout_constraintTop_toBottomOf="@id/tvTime"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="4dp" />
+
+        <TextView
+            android:id="@+id/tvDescription"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="Opis zdarzenia..."
+            android:textSize="12sp"
+            android:maxLines="2"
+            android:ellipsize="end"
+            app:layout_constraintStart_toEndOf="@id/ivThumbnail"
+            app:layout_constraintEnd_toStartOf="@id/tvConfidence"
+            app:layout_constraintTop_toBottomOf="@id/tvType"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="4dp"
+            android:layout_marginEnd="8dp" />
+
+        <TextView
+            android:id="@+id/tvConfidence"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="85%"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="@android:color/holo_red_dark"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent" />
+
+        <ImageView
+            android:id="@+id/ivReviewed"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:src="@drawable/ic_check"
+            android:visibility="gone"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            android:layout_marginEnd="4dp" />
+
+        <ImageView
+            android:id="@+id/ivFalsePositive"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:src="@drawable/ic_false_positive"
+            android:visibility="gone"
+            app:layout_constraintEnd_toStartOf="@id/ivReviewed"
+            app:layout_constraintBottom_toBottomOf="parent"
+            android:layout_marginEnd="4dp" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</androidx.cardview.widget.CardView>
+
+<!-- colors.xml -->
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="purple_200">#FFBB86FC</color>
+    <color name="purple_500">#FF6200EE</color>
+    <color name="purple_700">#FF3700B3</color>
+    <color name="teal_200">#FF03DAC5</color>
+    <color name="teal_700">#FF018786</color>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    
+    <color name="chip_background_color">#E0E0E0</color>
+    <color name="danger_red">#FFD32F2F</color>
+    <color name="warning_yellow">#FFF57C00</color>
+    <color name="safe_green">#FF388E3C</color>
+</resources>
+
+<!-- strings.xml -->
+<resources>
+    <string name="app_name">Ochrona Rodzicielska</string>
+    <string name="monitoring_active">Monitorowanie aktywne</string>
+    <string name="monitoring_inactive">Monitorowanie nieaktywne</string>
+    <string name="start_monitoring">Rozpocznij monitorowanie</string>
+    <string name="stop_monitoring">Zatrzymaj monitorowanie</string>
+    <string name="capture_interval">Interwał przechwytywania</string>
+    <string name="analysis_settings">Ustawienia analizy</string>
+    <string name="crop_bottom_half">Analizuj tylko dolną połowę ekranu</string>
+    <string name="local_analysis">Analiza lokalna (bez wysyłania do chmury)</string>
+    <string name="save_screenshots">Zapisuj zrzuty ekranu</string>
+    <string name="event_history">Historia zdarzeń</string>
+    <string name="pairing">Parowanie</string>
+    <string name="consent_title">Zgoda na monitorowanie</string>
+    <string name="consent_message">Ta aplikacja będzie monitorować zawartość ekranu w celu ochrony przed szkodliwymi treściami.</string>
+    <string name="agree">Zgadzam się</string>
+    <string name="cancel">Anuluj</string>
+</resources>
