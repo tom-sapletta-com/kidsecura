@@ -59,7 +59,39 @@
     <!-- AccessibilityService -->
     <string name="accessibility_service_description">Dyskretne monitorowanie treści dla ochrony rodzicielskiej. Analizuje tekst na ekranie wszystkich aplikacji bez nagrywania ekranu.</string>
     
+    <!-- Log Viewer -->
+    <string name="logs_title">Logi monitorowania</string>
+    <string name="btn_view_logs">Podgląd logów</string>
+    <string name="refresh">Odśwież</string>
+    <string name="filter_all_logs">Wszystkie</string>
+    <string name="filter_alerts">Alerty</string>
+    <string name="filter_apps">Aplikacje</string>
+    <string name="filter_service">Serwis</string>
+    <string name="filter_date">Okres:</string>
+    <string name="loading_logs">Ładowanie logów...</string>
+    <string name="no_logs_found">Brak logów</string>
+    <string name="no_logs_description">Brak plików logów w folderze Downloads/KidSecura.\nUpewnij się, że aplikacja ma uprawnienia do plików.</string>
+    <string name="show_details">Pokaż szczegóły</string>
+    <string name="hide_details">Ukryj szczegóły</string>
+    <string name="logs_count">Wyświetlono: %1$d z %2$d logów</string>
+    <string name="last_update">Ostatnia aktualizacja: %s</string>
+    
+    <!-- Date filter options -->
+    <string name="date_all">Wszystkie</string>
+    <string name="date_today">Dzisiaj</string>
+    <string name="date_yesterday">Wczoraj</string>
+    <string name="date_week">Ostatni tydzień</string>
+    <string name="date_month">Ostatni miesiąc</string>
+    
+    <!-- Log types for display -->
+    <string name="log_type_service">SERWIS</string>
+    <string name="log_type_alert">ALERT</string>
+    <string name="log_type_app_activity">APLIKACJA</string>
+    <string name="log_type_unknown">INNE</string>
+    
     <!-- Errors -->
     <string name="error_generic">Wystąpił błąd. Spróbuj ponownie.</string>
     <string name="error_no_projection">Nie można uzyskać dostępu do ekranu</string>
+    <string name="error_no_storage_permission">Brak uprawnień do odczytu plików</string>
+    <string name="error_logs_not_accessible">Nie można odczytać plików logów</string>
 </resources>
