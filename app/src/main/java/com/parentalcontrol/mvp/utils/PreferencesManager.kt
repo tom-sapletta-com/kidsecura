@@ -22,6 +22,12 @@ class PreferencesManager(context: Context) {
         private const val KEY_PAIRING_CODE = "pairing_code"
         private const val KEY_DEVICE_PAIRED = "device_paired"
         private const val KEY_THREAT_KEYWORDS = "threat_keywords"
+        
+        // Stealth Mode keys
+        private const val KEY_STEALTH_MODE_ENABLED = "stealth_mode_enabled"
+        private const val KEY_STEALTH_ACCESS_PIN = "stealth_access_pin"
+        private const val KEY_STEALTH_DISGUISE_MODE = "stealth_disguise_mode"
+        private const val KEY_STEALTH_LAST_ACCESS = "stealth_last_access"
     }
     
     private val gson = Gson()
@@ -103,4 +109,18 @@ class PreferencesManager(context: Context) {
             "narkotyki", "alkohol", "papierosy", "używki", "dealer"
         )
     }
+    
+    // ===== STEALTH MODE METHODS =====
+    
+    fun isStealthModeEnabled(): Boolean = prefs.getBoolean(KEY_STEALTH_MODE_ENABLED, false)
+    fun setStealthModeEnabled(enabled: Boolean) = prefs.edit().putBoolean(KEY_STEALTH_MODE_ENABLED, enabled).apply()
+    
+    fun getStealthAccessPin(): String? = prefs.getString(KEY_STEALTH_ACCESS_PIN, null)
+    fun setStealthAccessPin(pin: String?) = prefs.edit().putString(KEY_STEALTH_ACCESS_PIN, pin).apply()
+    
+    fun getStealthDisguiseMode(): String = prefs.getString(KEY_STEALTH_DISGUISE_MODE, "system_update") ?: "system_update"
+    fun setStealthDisguiseMode(mode: String) = prefs.edit().putString(KEY_STEALTH_DISGUISE_MODE, mode).apply()
+    
+    fun getStealthLastAccess(): Long = prefs.getLong(KEY_STEALTH_LAST_ACCESS, 0L)
+    fun setStealthLastAccess(timestamp: Long) = prefs.edit().putLong(KEY_STEALTH_LAST_ACCESS, timestamp).apply()
 }

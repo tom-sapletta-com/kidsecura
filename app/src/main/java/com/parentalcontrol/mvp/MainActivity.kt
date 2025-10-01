@@ -12,6 +12,9 @@ import android.os.Bundle
 import android.provider.Settings
 import android.util.Log
 import android.widget.Toast
+import android.widget.EditText
+import android.widget.LinearLayout
+import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -22,12 +25,12 @@ import com.parentalcontrol.mvp.model.DeviceType
 import com.parentalcontrol.mvp.service.ScreenCaptureService
 import com.parentalcontrol.mvp.utils.PreferencesManager
 import com.parentalcontrol.mvp.utils.FileLogger
+import com.parentalcontrol.mvp.utils.SystemLogger
 import kotlinx.coroutines.*
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
 import android.view.View
-import android.widget.LinearLayout
 import android.widget.ScrollView
 
 class MainActivity : AppCompatActivity() {
@@ -36,6 +39,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var mediaProjectionManager: MediaProjectionManager
     private lateinit var prefsManager: PreferencesManager
     private lateinit var fileLogger: FileLogger
+    private lateinit var systemLogger: SystemLogger
+    private lateinit var stealthManager: StealthManager
     
     private var isServiceRunning = false
     private val logUpdateScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
@@ -44,6 +49,7 @@ class MainActivity : AppCompatActivity() {
     companion object {
         const val REQUEST_MEDIA_PROJECTION = 1001
         const val PERMISSION_REQUEST_CODE = 2001
+        private const val TAG = "MainActivity"
     }
     
     // Launcher dla rezultatu MediaProjection
@@ -81,6 +87,13 @@ class MainActivity : AppCompatActivity() {
             
             fileLogger = FileLogger(this)
             Log.d(TAG, "✅ FileLogger initialized")
+            
+            systemLogger = SystemLogger.getInstance(this)
+            Log.d(TAG, "✅ SystemLogger initialized")
+            systemLogger.logActivity("MainActivity", "onCreate", "App startup initiated")
+            
+            stealthManager = StealthManager(this, prefsManager, systemLogger)
+            Log.d(TAG, "✅ StealthManager initialized")
             
             setupUI()
             Log.d(TAG, "✅ setupUI() completed")
@@ -150,18 +163,18 @@ class MainActivity : AppCompatActivity() {
                 startActivity(Intent(this@MainActivity, LogViewerActivity::class.java))
             }
             
-            // Edytor słów kluczowych
-            Log.d(TAG, "🔧 Setting up btnKeywordsEditor click listener")
+            // Edytor słów kluczowych - NOWY DIALOG zamiast problematycznego Activity
+            Log.d(TAG, "🔧 Setting up btnKeywordsEditor click listener - NEW DIALOG VERSION")
             btnKeywordsEditor.setOnClickListener {
                 try {
-                    Log.d(TAG, "🔧 btnKeywordsEditor clicked - Próba otwarcia KeywordsEditorActivity...")
-                    val intent = Intent(this@MainActivity, KeywordsEditorActivity::class.java)
-                    Log.d(TAG, "✅ Intent utworzony poprawnie")
-                    startActivity(intent)
-                    Log.d(TAG, "✅ startActivity wywołane poprawnie")
+                    Log.d(TAG, "🔧 btnKeywordsEditor clicked - Opening new keywords dialog")
+                    systemLogger.logButtonClick("Słowa Kluczowe", "MainActivity", true)
+                    showKeywordsEditorDialog()
+                    Log.d(TAG, "✅ Keywords editor dialog shown successfully")
                 } catch (e: Exception) {
-                    Log.e(TAG, "❌ BŁĄD podczas otwierania KeywordsEditorActivity", e)
-                    Toast.makeText(this@MainActivity, "Błąd KeywordsEditor: ${e.message}", Toast.LENGTH_LONG).show()
+                    Log.e(TAG, "❌ BŁĄD podczas otwierania dialog słów kluczowych", e)
+                    systemLogger.logButtonClick("Słowa Kluczowe", "MainActivity", false, e.message)
+                    Toast.makeText(this@MainActivity, "Błąd Słowa Kluczowe: ${e.message}", Toast.LENGTH_LONG).show()
                 }
             }
             
@@ -170,11 +183,13 @@ class MainActivity : AppCompatActivity() {
             btnManageDevices.setOnClickListener {
                 try {
                     Log.d(TAG, "🔧 btnManageDevices clicked - Opening PairedDevicesActivity")
+                    systemLogger.logButtonClick("Zarządzanie urządzeń", "MainActivity", true)
                     val intent = Intent(this@MainActivity, PairedDevicesActivity::class.java)
                     startActivity(intent)
                     Log.d(TAG, "✅ PairedDevicesActivity opened successfully")
                 } catch (e: Exception) {
                     Log.e(TAG, "❌ BŁĄD podczas otwierania PairedDevicesActivity", e)
+                    systemLogger.logButtonClick("Zarządzanie urządzeń", "MainActivity", false, e.message)
                     Toast.makeText(this@MainActivity, "Błąd Urządzenia: ${e.message}", Toast.LENGTH_LONG).show()
                 }
             }
@@ -184,11 +199,13 @@ class MainActivity : AppCompatActivity() {
             btnViewIncidents.setOnClickListener {
                 try {
                     Log.d(TAG, "🔧 btnViewIncidents clicked - Opening IncidentsActivity")
+                    systemLogger.logButtonClick("Historia incydentów", "MainActivity", true)
                     val intent = Intent(this@MainActivity, IncidentsActivity::class.java)
                     startActivity(intent)
                     Log.d(TAG, "✅ IncidentsActivity opened successfully")
                 } catch (e: Exception) {
                     Log.e(TAG, "❌ BŁĄD podczas otwierania IncidentsActivity", e)
+                    systemLogger.logButtonClick("Historia incydentów", "MainActivity", false, e.message)
                     Toast.makeText(this@MainActivity, "Błąd Historia: ${e.message}", Toast.LENGTH_LONG).show()
                 }
             }
@@ -198,11 +215,13 @@ class MainActivity : AppCompatActivity() {
             btnAlertSettings.setOnClickListener {
                 try {
                     Log.d(TAG, "🔧 btnAlertSettings clicked - Opening AlertSettingsActivity")
+                    systemLogger.logButtonClick("Ustawienia alertów", "MainActivity", true)
                     val intent = Intent(this@MainActivity, AlertSettingsActivity::class.java)
                     startActivity(intent)
                     Log.d(TAG, "✅ AlertSettingsActivity opened successfully")
                 } catch (e: Exception) {
                     Log.e(TAG, "❌ BŁĄD podczas otwierania AlertSettingsActivity", e)
+                    systemLogger.logButtonClick("Ustawienia alertów", "MainActivity", false, e.message)
                     Toast.makeText(this@MainActivity, "Błąd Alerty: ${e.message}", Toast.LENGTH_LONG).show()
                 }
             }
@@ -212,11 +231,41 @@ class MainActivity : AppCompatActivity() {
             btnPairDevice.setOnClickListener {
                 try {
                     Log.d(TAG, "🔧 btnPairDevice clicked - Opening device pairing dialog")
+                    systemLogger.logButtonClick("Parowanie urządzeń", "MainActivity", true)
                     showDeviceTypeSelectionDialog()
                     Log.d(TAG, "✅ Device pairing dialog shown successfully")
                 } catch (e: Exception) {
                     Log.e(TAG, "❌ BŁĄD podczas otwierania dialog parowania", e)
+                    systemLogger.logButtonClick("Parowanie urządzeń", "MainActivity", false, e.message)
                     Toast.makeText(this@MainActivity, "Błąd Parowanie: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+            }
+            
+            // STEALTH MODE CONTROLS
+            Log.d(TAG, "🕵️ Setting up Stealth Mode controls")
+            btnStealthMode.setOnClickListener {
+                try {
+                    Log.d(TAG, "🕵️ btnStealthMode clicked - Toggle stealth mode")
+                    systemLogger.logButtonClick("Tryb Ukryty", "MainActivity", true)
+                    toggleStealthMode()
+                    Log.d(TAG, "✅ Stealth mode toggle completed")
+                } catch (e: Exception) {
+                    Log.e(TAG, "❌ BŁĄD podczas toggle stealth mode", e)
+                    systemLogger.logButtonClick("Tryb Ukryty", "MainActivity", false, e.message)
+                    Toast.makeText(this@MainActivity, "Błąd trybu ukrytego: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+            }
+            
+            btnStealthSettings.setOnClickListener {
+                try {
+                    Log.d(TAG, "🎭 btnStealthSettings clicked - Opening stealth configuration")
+                    systemLogger.logButtonClick("Konfiguracja Stealth", "MainActivity", true)
+                    showStealthSettingsDialog()
+                    Log.d(TAG, "✅ Stealth settings dialog opened")
+                } catch (e: Exception) {
+                    Log.e(TAG, "❌ BŁĄD podczas otwierania stealth settings", e)
+                    systemLogger.logButtonClick("Konfiguracja Stealth", "MainActivity", false, e.message)
+                    Toast.makeText(this@MainActivity, "Błąd konfiguracji stealth: ${e.message}", Toast.LENGTH_LONG).show()
                 }
             }
         }
@@ -353,6 +402,152 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         updateServiceStatus()
+    }
+    
+    /**
+     * New Keywords Editor Dialog - replaces problematic KeywordsEditorActivity
+     * Simple, reliable dialog for managing threat keywords inline in MainActivity
+     */
+    private fun showKeywordsEditorDialog() {
+        try {
+            systemLogger.d(TAG, "🔧 showKeywordsEditorDialog() - START")
+            
+            val currentKeywords = prefsManager.getThreatKeywords().toMutableList()
+            systemLogger.d(TAG, "✅ Loaded ${currentKeywords.size} current keywords")
+            
+            // Create dialog layout
+            val dialogView = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(32, 32, 32, 32)
+            }
+            
+            // Title
+            val titleView = TextView(this).apply {
+                text = "🔍 Edytor Słów Kluczowych"
+                textSize = 18f
+                setTypeface(null, android.graphics.Typeface.BOLD)
+                setPadding(0, 0, 0, 24)
+            }
+            dialogView.addView(titleView)
+            
+            // Keywords list container
+            val keywordsContainer = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(0, 0, 0, 16)
+            }
+            
+            // Function to refresh keywords display
+            fun refreshKeywordsList() {
+                keywordsContainer.removeAllViews()
+                if (currentKeywords.isEmpty()) {
+                    val emptyView = TextView(this@MainActivity).apply {
+                        text = "Brak słów kluczowych. Dodaj pierwsze słowo poniżej."
+                        setPadding(16, 16, 16, 16)
+                        setTextColor(ContextCompat.getColor(this@MainActivity, android.R.color.darker_gray))
+                    }
+                    keywordsContainer.addView(emptyView)
+                } else {
+                    currentKeywords.forEachIndexed { index, keyword ->
+                        val keywordRow = LinearLayout(this@MainActivity).apply {
+                            orientation = LinearLayout.HORIZONTAL
+                            setPadding(8, 8, 8, 8)
+                        }
+                        
+                        val keywordText = TextView(this@MainActivity).apply {
+                            text = "• $keyword"
+                            textSize = 16f
+                            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                            setPadding(8, 8, 8, 8)
+                        }
+                        
+                        val deleteButton = android.widget.Button(this@MainActivity).apply {
+                            text = "✕"
+                            layoutParams = LinearLayout.LayoutParams(100, LinearLayout.LayoutParams.WRAP_CONTENT)
+                            setOnClickListener {
+                                currentKeywords.removeAt(index)
+                                refreshKeywordsList()
+                                systemLogger.d(TAG, "🗑️ Removed keyword: $keyword")
+                            }
+                        }
+                        
+                        keywordRow.addView(keywordText)
+                        keywordRow.addView(deleteButton)
+                        keywordsContainer.addView(keywordRow)
+                    }
+                }
+            }
+            
+            refreshKeywordsList()
+            dialogView.addView(keywordsContainer)
+            
+            // Add new keyword section
+            val addKeywordLabel = TextView(this).apply {
+                text = "Dodaj nowe słowo kluczowe:"
+                setPadding(0, 16, 0, 8)
+            }
+            dialogView.addView(addKeywordLabel)
+            
+            val newKeywordInput = EditText(this).apply {
+                hint = "Wpisz słowo kluczowe..."
+                setPadding(16, 16, 16, 16)
+            }
+            dialogView.addView(newKeywordInput)
+            
+            val addButton = android.widget.Button(this).apply {
+                text = "➕ Dodaj"
+                setOnClickListener {
+                    val newKeyword = newKeywordInput.text.toString().trim()
+                    if (newKeyword.isNotEmpty() && !currentKeywords.contains(newKeyword)) {
+                        currentKeywords.add(newKeyword)
+                        newKeywordInput.setText("")
+                        refreshKeywordsList()
+                        systemLogger.d(TAG, "➕ Added new keyword: $newKeyword")
+                    } else if (currentKeywords.contains(newKeyword)) {
+                        Toast.makeText(this@MainActivity, "To słowo już istnieje!", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+            dialogView.addView(addButton)
+            
+            // Reset to defaults button
+            val resetButton = android.widget.Button(this).apply {
+                text = "🔄 Przywróć domyślne"
+                setOnClickListener {
+                    AlertDialog.Builder(this@MainActivity)
+                        .setTitle("Przywrócić domyślne słowa kluczowe?")
+                        .setMessage("To zastąpi wszystkie obecne słowa kluczowe domyślną listą.")
+                        .setPositiveButton("Tak") { _, _ ->
+                            // Use the public method to reset keywords
+                            prefsManager.resetThreatKeywordsToDefault()
+                            // Reload the keywords from preferences
+                            currentKeywords.clear()
+                            currentKeywords.addAll(prefsManager.getThreatKeywords())
+                            refreshKeywordsList()
+                            systemLogger.d(TAG, "🔄 Reset to default keywords")
+                        }
+                        .setNegativeButton("Anuluj", null)
+                        .show()
+                }
+            }
+            dialogView.addView(resetButton)
+            
+            // Show dialog
+            AlertDialog.Builder(this)
+                .setTitle("Słowa Kluczowe")
+                .setView(dialogView)
+                .setPositiveButton("💾 Zapisz") { _, _ ->
+                    prefsManager.setThreatKeywords(currentKeywords)
+                    systemLogger.d(TAG, "💾 Saved ${currentKeywords.size} keywords to preferences")
+                    Toast.makeText(this, "Słowa kluczowe zapisane!", Toast.LENGTH_SHORT).show()
+                }
+                .setNegativeButton("Anuluj", null)
+                .show()
+                
+            systemLogger.d(TAG, "✅ Keywords editor dialog shown successfully")
+        } catch (e: Exception) {
+            systemLogger.e(TAG, "❌ Error in showKeywordsEditorDialog()", e)
+            Toast.makeText(this, "Błąd dialogu słów kluczowych: ${e.message}", Toast.LENGTH_LONG).show()
+        }
     }
     
     override fun onRequestPermissionsResult(
@@ -494,6 +689,215 @@ class MainActivity : AppCompatActivity() {
         }
     }
     
+    /**
+     * Toggle Stealth Mode - włącza/wyłącza tryb ukryty aplikacji
+     */
+    private fun toggleStealthMode() {
+        try {
+            systemLogger.i(TAG, "🕵️ toggleStealthMode() - START")
+            
+            if (stealthManager.isStealthModeEnabled()) {
+                // Wyłącz tryb stealth
+                AlertDialog.Builder(this)
+                    .setTitle("🔓 Wyłączyć Tryb Ukryty?")
+                    .setMessage("Aplikacja stanie się widoczna dla dzieci. Czy kontynuować?")
+                    .setPositiveButton("Tak, wyłącz") { _, _ ->
+                        if (stealthManager.disableStealthMode()) {
+                            updateStealthUI()
+                            systemLogger.i(TAG, "✅ Stealth Mode DISABLED successfully")
+                            Toast.makeText(this, "🔓 Tryb ukryty WYŁĄCZONY", Toast.LENGTH_SHORT).show()
+                        } else {
+                            systemLogger.e(TAG, "❌ Failed to disable Stealth Mode")
+                            Toast.makeText(this, "❌ Błąd wyłączania trybu ukrytego", Toast.LENGTH_LONG).show()
+                        }
+                    }
+                    .setNegativeButton("Anuluj", null)
+                    .show()
+            } else {
+                // Włącz tryb stealth - wymagaj PIN
+                showStealthActivationDialog()
+            }
+        } catch (e: Exception) {
+            systemLogger.e(TAG, "❌ Error in toggleStealthMode()", e)
+            Toast.makeText(this, "Błąd stealth mode: ${e.message}", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    /**
+     * Pokazuje dialog aktywacji trybu stealth z konfiguracją PIN
+     */
+    private fun showStealthActivationDialog() {
+        try {
+            systemLogger.i(TAG, "🔐 showStealthActivationDialog() - START")
+            
+            val dialogView = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(32, 32, 32, 32)
+            }
+            
+            // Title
+            val titleView = TextView(this).apply {
+                text = "🕵️ Aktywacja Trybu Ukrytego"
+                textSize = 18f
+                setTypeface(null, android.graphics.Typeface.BOLD)
+                setPadding(0, 0, 0, 24)
+            }
+            dialogView.addView(titleView)
+            
+            // Warning message
+            val warningView = TextView(this).apply {
+                text = "⚠️ UWAGA: Po aktywacji aplikacja zostanie UKRYTA przed dziećmi.\n\n" +
+                       "• Ikona zniknie z listy aplikacji\n" +
+                       "• Dostęp tylko przez sekretny kod\n" +
+                       "• Monitoring będzie działał w tle\n\n" +
+                       "Ustaw PIN dostępu (opcjonalnie):"
+                textSize = 14f
+                setPadding(0, 0, 0, 16)
+            }
+            dialogView.addView(warningView)
+            
+            // PIN input
+            val pinInput = EditText(this).apply {
+                hint = "Kod PIN (zostaw puste dla brak PIN)"
+                inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_VARIATION_PASSWORD
+                setPadding(16, 16, 16, 16)
+            }
+            dialogView.addView(pinInput)
+            
+            // Show dialog
+            AlertDialog.Builder(this)
+                .setTitle("Tryb Ukryty")
+                .setView(dialogView)
+                .setPositiveButton("🕵️ AKTYWUJ") { _, _ ->
+                    val pin = pinInput.text.toString().trim()
+                    if (stealthManager.enableStealthMode(pin.ifEmpty { null })) {
+                        updateStealthUI()
+                        systemLogger.i(TAG, "✅ Stealth Mode ENABLED successfully")
+                        showStealthAccessInstructions()
+                    } else {
+                        systemLogger.e(TAG, "❌ Failed to enable Stealth Mode")
+                        Toast.makeText(this, "❌ Błąd aktywacji trybu ukrytego", Toast.LENGTH_LONG).show()
+                    }
+                }
+                .setNegativeButton("Anuluj", null)
+                .show()
+                
+            systemLogger.d(TAG, "✅ Stealth activation dialog shown")
+        } catch (e: Exception) {
+            systemLogger.e(TAG, "❌ Error in showStealthActivationDialog()", e)
+            Toast.makeText(this, "Błąd dialogu aktywacji: ${e.message}", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    /**
+     * Pokazuje instrukcje dostępu do ukrytej aplikacji
+     */
+    private fun showStealthAccessInstructions() {
+        try {
+            val secretCode = stealthManager.generateSecretAccessCode()
+            
+            AlertDialog.Builder(this)
+                .setTitle("🔒 Instrukcje Dostępu")
+                .setMessage("Aplikacja zostanie ukryta za 10 sekund.\n\n" +
+                           "SPOSÓB DOSTĘPU:\n" +
+                           "• Otwórz telefon i wpisz: $secretCode\n" +
+                           "• Lub 3x tapnij w róg ekranu i narysuj wzór\n" +
+                           "• Aplikacja pojawi się ponownie\n\n" +
+                           "⚠️ ZAPAMIĘTAJ TEN KOD!")
+                .setPositiveButton("Rozumiem") { _, _ ->
+                    // Ukryj aplikację po 10 sekundach
+                    android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                        finish()
+                    }, 10000)
+                }
+                .setCancelable(false)
+                .show()
+                
+        } catch (e: Exception) {
+            systemLogger.e(TAG, "❌ Error showing access instructions", e)
+        }
+    }
+
+    /**
+     * Pokazuje dialog ustawień trybu stealth
+     */
+    private fun showStealthSettingsDialog() {
+        try {
+            systemLogger.i(TAG, "🎭 showStealthSettingsDialog() - START")
+            
+            val stealthStatus = stealthManager.getStealthStatus()
+            val isEnabled = stealthStatus["enabled"] as Boolean
+            val disguiseMode = stealthStatus["disguise_mode"] as String
+            val hasPIN = stealthStatus["pin_configured"] as Boolean
+            
+            val dialogView = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(32, 32, 32, 32)
+            }
+            
+            // Title
+            val titleView = TextView(this).apply {
+                text = "🎭 Konfiguracja Trybu Ukrytego"
+                textSize = 18f
+                setTypeface(null, android.graphics.Typeface.BOLD)
+                setPadding(0, 0, 0, 24)
+            }
+            dialogView.addView(titleView)
+            
+            // Current status
+            val statusView = TextView(this).apply {
+                text = "Status: ${if (isEnabled) "🟢 AKTYWNY" else "🔴 NIEAKTYWNY"}\n" +
+                       "Tryb maskowania: $disguiseMode\n" +
+                       "PIN skonfigurowany: ${if (hasPIN) "✅ TAK" else "❌ NIE"}"
+                textSize = 14f
+                setPadding(0, 0, 0, 16)
+            }
+            dialogView.addView(statusView)
+            
+            // Show dialog
+            AlertDialog.Builder(this)
+                .setTitle("Konfiguracja Stealth")
+                .setView(dialogView)
+                .setPositiveButton("💾 Zapisz") { _, _ ->
+                    systemLogger.d(TAG, "✅ Stealth settings saved")
+                    Toast.makeText(this, "Konfiguracja zapisana", Toast.LENGTH_SHORT).show()
+                }
+                .setNegativeButton("Anuluj", null)
+                .show()
+                
+            systemLogger.d(TAG, "✅ Stealth settings dialog shown")
+        } catch (e: Exception) {
+            systemLogger.e(TAG, "❌ Error in showStealthSettingsDialog()", e)
+            Toast.makeText(this, "Błąd dialogu ustawień: ${e.message}", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    /**
+     * Aktualizuje UI przycisków stealth na podstawie aktualnego stanu
+     */
+    private fun updateStealthUI() {
+        try {
+            val isStealthEnabled = stealthManager.isStealthModeEnabled()
+            
+            binding.btnStealthMode.text = if (isStealthEnabled) {
+                "🔓 Wyłącz Ukryty"
+            } else {
+                "🕵️ Tryb Ukryty"
+            }
+            
+            binding.btnStealthMode.setBackgroundColor(
+                ContextCompat.getColor(this, 
+                    if (isStealthEnabled) android.R.color.holo_orange_dark 
+                    else android.R.color.holo_blue_dark
+                )
+            )
+            
+            systemLogger.d(TAG, "✅ Stealth UI updated - enabled: $isStealthEnabled")
+        } catch (e: Exception) {
+            systemLogger.e(TAG, "❌ Error updating stealth UI", e)
+        }
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         logUpdateJob?.cancel()

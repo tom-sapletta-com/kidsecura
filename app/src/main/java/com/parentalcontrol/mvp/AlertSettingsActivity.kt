@@ -470,6 +470,7 @@ class AlertSettingsActivity : AppCompatActivity() {
     }
     
     override fun onBackPressed() {
+        super.onBackPressed()
         handleBackPressed()
     }
     
