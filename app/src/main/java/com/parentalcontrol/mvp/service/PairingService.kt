@@ -1137,4 +1137,167 @@ class PairingService(private val context: Context) {
         
         serviceScope.cancel()
     }
+    
+    /**
+     * Wykonuje operację z retry logic i exponential backoff
+     */
+    private suspend fun <T> executeWithRetry(
+        operation: String,
+        maxAttempts: Int = MAX_RETRY_ATTEMPTS,
+        block: suspend () -> T
+    ): T? {
+        var lastException: Exception? = null
+        
+        repeat(maxAttempts) { attempt ->
+            try {
+                Log.d(TAG, "🔄 Attempt ${attempt + 1}/$maxAttempts for operation: $operation")
+                val result = block()
+                
+                if (attempt > 0) {
+                    Log.d(TAG, "✅ Operation '$operation' succeeded on attempt ${attempt + 1}")
+                }
+                
+                return result
+            } catch (e: Exception) {
+                lastException = e
+                Log.w(TAG, "⚠️ Attempt ${attempt + 1}/$maxAttempts failed for '$operation': ${e.message}")
+                
+                if (attempt < maxAttempts - 1) {
+                    val delayMs = (RETRY_DELAY_BASE * Math.pow(RETRY_DELAY_MULTIPLIER, attempt.toDouble())).toLong()
+                    Log.d(TAG, "⏳ Waiting ${delayMs}ms before retry...")
+                    delay(delayMs)
+                }
+            }
+        }
+        
+        Log.e(TAG, "❌ All $maxAttempts attempts failed for operation '$operation'", lastException)
+        return null
+    }
+    
+    /**
+     * Sprawdza czy połączenie jest aktywne
+     */
+    private suspend fun checkConnectionHealth(): Boolean {
+        return try {
+            currentPairingData?.let { pairingData ->
+                val testMessage = RemoteMessage(
+                    senderId = "health_check",
+                    recipientId = pairingData.deviceId,
+                    messageType = MessageType.HEARTBEAT,
+                    payload = gson.toJson(mapOf("type" to "health_check")),
+                    timestamp = System.currentTimeMillis()
+                )
+                
+                executeWithRetry("connection_health_check") {
+                    sendMessage(testMessage, pairingData)
+                    true
+                } ?: false
+            } ?: false
+        } catch (e: Exception) {
+            Log.w(TAG, "❤️ Connection health check failed: ${e.message}")
+            false
+        }
+    }
+    
+    /**
+     * Rozpoczyna automatyczne reconnection w przypadku utraty połączenia
+     */
+    private fun startAutomaticReconnection() {
+        if (isReconnecting.getAndSet(true)) {
+            Log.d(TAG, "🔄 Reconnection already in progress, skipping...")
+            return
+        }
+        
+        reconnectionJob?.cancel()
+        reconnectionJob = serviceScope.launch {
+            Log.d(TAG, "🔄 Starting automatic reconnection process...")
+            reconnectionAttempts.set(0)
+            
+            while (reconnectionAttempts.get() < MAX_RECONNECTION_ATTEMPTS && isActive) {
+                val attemptNumber = reconnectionAttempts.incrementAndGet()
+                Log.d(TAG, "🔄 Reconnection attempt $attemptNumber/$MAX_RECONNECTION_ATTEMPTS")
+                
+                try {
+                    val connectionRestored = checkConnectionHealth()
+                    
+                    if (connectionRestored) {
+                        Log.d(TAG, "✅ Connection restored successfully!")
+                        isConnectionHealthy.set(true)
+                        isReconnecting.set(false)
+                        reconnectionAttempts.set(0)
+                        
+                        // Restart heartbeat if it was stopped
+                        if (heartbeatJob?.isActive != true) {
+                            startHeartbeat()
+                        }
+                        
+                        return@launch
+                    }
+                    
+                } catch (e: Exception) {
+                    Log.w(TAG, "⚠️ Reconnection attempt $attemptNumber failed: ${e.message}")
+                }
+                
+                if (attemptNumber < MAX_RECONNECTION_ATTEMPTS) {
+                    Log.d(TAG, "⏳ Waiting ${RECONNECTION_DELAY}ms before next reconnection attempt...")
+                    delay(RECONNECTION_DELAY)
+                }
+            }
+            
+            Log.e(TAG, "❌ All reconnection attempts failed. Connection lost.")
+            isConnectionHealthy.set(false)
+            isReconnecting.set(false)
+            
+            // Notify about connection loss
+            currentPairingData?.let { pairingData ->
+                updatePairingStatus(false, pairingData)
+            }
+        }
+    }
+    
+    /**
+     * Zatrzymuje proces automatycznego reconnection
+     */
+    private fun stopAutomaticReconnection() {
+        Log.d(TAG, "🛑 Stopping automatic reconnection...")
+        isReconnecting.set(false)
+        reconnectionJob?.cancel()
+        reconnectionJob = null
+    }
+    
+    /**
+     * Enhanced heartbeat z connection monitoring
+     */
+    private fun startEnhancedHeartbeat() {
+        heartbeatJob?.cancel()
+        heartbeatJob = serviceScope.launch {
+            Log.d(TAG, "💓 Enhanced heartbeat started with interval: ${HEARTBEAT_INTERVAL}ms")
+            
+            while (isActive && currentPairingData != null) {
+                try {
+                    val isHealthy = checkConnectionHealth()
+                    
+                    if (!isHealthy && isConnectionHealthy.get()) {
+                        Log.w(TAG, "⚠️ Connection health deteriorated, starting reconnection...")
+                        isConnectionHealthy.set(false)
+                        startAutomaticReconnection()
+                    } else if (isHealthy && !isConnectionHealthy.get()) {
+                        Log.d(TAG, "✅ Connection health restored")
+                        isConnectionHealthy.set(true)
+                        stopAutomaticReconnection()
+                    }
+                    
+                } catch (e: Exception) {
+                    Log.e(TAG, "💓 Heartbeat error: ${e.message}")
+                    if (isConnectionHealthy.get()) {
+                        startAutomaticReconnection()
+                    }
+                }
+                
+                delay(HEARTBEAT_INTERVAL)
+            }
+            
+            Log.d(TAG, "💓 Enhanced heartbeat stopped")
+        }
+    }
 }
