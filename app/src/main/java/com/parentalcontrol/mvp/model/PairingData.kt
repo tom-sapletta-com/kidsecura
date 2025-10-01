@@ -121,6 +121,9 @@ enum class MessageType {
     @SerializedName("alert")
     ALERT,
     
+    @SerializedName("incident_alert")
+    INCIDENT_ALERT,
+    
     @SerializedName("config_update")
     CONFIG_UPDATE,
     

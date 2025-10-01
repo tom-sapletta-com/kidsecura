@@ -479,6 +479,22 @@ class PairingService(private val context: Context) {
                     
                     sendHttpResponse(writer, 200, "OK", "{\"status\": \"received\"}")
                 }
+                MessageType.INCIDENT_ALERT -> {
+                    Log.d(TAG, "🚨 Received incident alert from: ${remoteMessage.senderId}")
+                    
+                    val incidentNotification = gson.fromJson(remoteMessage.payload, IncidentNotification::class.java)
+                    processIncidentAlert(incidentNotification, remoteMessage.senderId)
+                    
+                    // Wysyłaj ACK jeśli wymagane
+                    val response = RemoteMessage(
+                        senderId = getCurrentDeviceId(),
+                        recipientId = remoteMessage.senderId,
+                        messageType = MessageType.ACKNOWLEDGMENT,
+                        payload = "INCIDENT_ALERT_RECEIVED"
+                    )
+                    
+                    sendHttpResponse(writer, 200, "OK", gson.toJson(response))
+                }
                 else -> {
                     Log.d(TAG, "Unhandled message type: ${remoteMessage.messageType}")
                     sendHttpResponse(writer, 400, "Bad Request", "{\"error\": \"Unhandled message type\"}")
@@ -1010,6 +1026,64 @@ class PairingService(private val context: Context) {
             .apply()
             
         Log.d(TAG, "Device unpaired")
+    }
+    
+    /**
+     * Przetwarza powiadomienie o incydencie od urządzenia dziecka
+     */
+    private suspend fun processIncidentAlert(incidentNotification: IncidentNotification, senderId: String) = withContext(Dispatchers.Main) {
+        try {
+            Log.d(TAG, "=== PRZETWARZANIE ALERTU INCYDENTU ===")
+            Log.d(TAG, "Incident ID: ${incidentNotification.incidentId}")
+            Log.d(TAG, "Device: ${incidentNotification.deviceName}")
+            Log.d(TAG, "Severity: ${incidentNotification.severity.displayName}")
+            Log.d(TAG, "Description: ${incidentNotification.description}")
+            Log.d(TAG, "Confidence: ${(incidentNotification.confidence * 100).toInt()}%")
+            Log.d(TAG, "Keywords: ${incidentNotification.detectedKeywords.joinToString(", ")}")
+            
+            // Tworzenie lokalnego powiadomienia dla rodzica
+            val title = "🚨 ALERT: ${incidentNotification.severity.displayName.uppercase()} incydent!"
+            val message = "${incidentNotification.deviceName}: ${incidentNotification.description}"
+            
+            // Wysyłanie powiadomienia przez NotificationHelper
+            val notificationHelper = com.parentalcontrol.mvp.utils.NotificationHelper(context)
+            notificationHelper.showAlert(
+                title = title,
+                message = message,
+                confidence = (incidentNotification.confidence * 100).toInt()
+            )
+            
+            // Opcjonalnie: zapisz incydent w lokalnym IncidentManager
+            try {
+                val localIncident = Incident(
+                    id = incidentNotification.incidentId,
+                    deviceId = incidentNotification.deviceId,
+                    deviceName = incidentNotification.deviceName,
+                    timestamp = incidentNotification.timestamp,
+                    description = incidentNotification.description,
+                    severity = incidentNotification.severity,
+                    confidence = incidentNotification.confidence,
+                    detectedKeywords = incidentNotification.detectedKeywords,
+                    extractedText = incidentNotification.extractedText,
+                    isReviewed = false
+                )
+                
+                val incidentManager = com.parentalcontrol.mvp.manager.IncidentManager(context)
+                withContext(Dispatchers.IO) {
+                    incidentManager.addIncident(localIncident)
+                }
+                
+                Log.d(TAG, "✅ Incident saved locally for parent review")
+                
+            } catch (e: Exception) {
+                Log.e(TAG, "Error saving incident locally", e)
+            }
+            
+            Log.d(TAG, "✅ INCIDENT ALERT PROCESSED SUCCESSFULLY")
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ ERROR processing incident alert", e)
+        }
     }
     
     /**
