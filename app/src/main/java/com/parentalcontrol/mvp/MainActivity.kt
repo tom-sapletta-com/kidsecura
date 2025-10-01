@@ -97,6 +97,9 @@ class MainActivity : AppCompatActivity() {
             stealthManager = StealthManager(this, prefsManager, systemLogger)
             Log.d(TAG, "✅ StealthManager initialized")
             
+            messagingManager = MessagingIntegrationManager(this, prefsManager, systemLogger)
+            Log.d(TAG, "✅ MessagingIntegrationManager initialized")
+            
             // Aktywuj ochronę anti-tampering przy starcie aplikacji
             stealthManager.activateAntiTamperingProtection()
             Log.d(TAG, "🛡️ Anti-tampering protection activated")
@@ -272,6 +275,21 @@ class MainActivity : AppCompatActivity() {
                     Log.e(TAG, "❌ BŁĄD podczas otwierania stealth settings", e)
                     systemLogger.logButtonClick("Konfiguracja Stealth", "MainActivity", false, e.message)
                     Toast.makeText(this@MainActivity, "Błąd konfiguracji stealth: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+            }
+            
+            // MESSAGING INTEGRATION CONTROLS
+            Log.d(TAG, "📱 Setting up Messaging Integration controls")
+            btnAlertSettings.setOnClickListener {
+                try {
+                    Log.d(TAG, "📱 btnAlertSettings clicked - Opening messaging configuration")
+                    systemLogger.logButtonClick("Konfiguracja Alertów", "MainActivity", true)
+                    showMessagingConfigDialog()
+                    Log.d(TAG, "✅ Messaging config dialog opened")
+                } catch (e: Exception) {
+                    Log.e(TAG, "❌ BŁĄD podczas otwierania messaging config", e)
+                    systemLogger.logButtonClick("Konfiguracja Alertów", "MainActivity", false, e.message)
+                    Toast.makeText(this@MainActivity, "Błąd konfiguracji alertów: ${e.message}", Toast.LENGTH_LONG).show()
                 }
             }
         }
