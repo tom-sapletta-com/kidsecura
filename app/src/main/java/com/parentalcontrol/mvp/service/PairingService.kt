@@ -487,7 +487,7 @@ class PairingService(private val context: Context) {
                     
                     // Wysyłaj ACK jeśli wymagane
                     val response = RemoteMessage(
-                        senderId = getDeviceId(),
+                        senderId = getCurrentDeviceId(),
                         recipientId = remoteMessage.senderId,
                         messageType = MessageType.ACKNOWLEDGMENT,
                         payload = "INCIDENT_ALERT_RECEIVED"

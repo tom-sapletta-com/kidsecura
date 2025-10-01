@@ -36,6 +36,17 @@ class PairedDevicesManager(private val context: Context) {
     }
     
     /**
+     * Pobiera ID bieżącego urządzenia
+     */
+    fun getCurrentDeviceId(): String {
+        return prefs.getString("device_id", null) ?: run {
+            val newId = java.util.UUID.randomUUID().toString()
+            prefs.edit().putString("device_id", newId).apply()
+            newId
+        }
+    }
+    
+    /**
      * Dodaje nowe sparowane urządzenie
      */
     fun addPairedDevice(pairingData: PairingData): PairedDevice {
