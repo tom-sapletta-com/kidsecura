@@ -63,28 +63,25 @@ class PairingActivity : AppCompatActivity() {
         
         binding.instructionsText.setText(instructionsResId)
         
-        // Pokaż odpowiednie przyciski
+        // Ustaw tekst przycisku skanowania
         when (deviceType) {
             DeviceType.PARENT -> {
                 binding.scanQrButton.text = getString(R.string.scan_child_qr)
-                binding.generateQrButton.text = getString(R.string.show_parent_qr)
             }
             DeviceType.CHILD -> {
                 binding.scanQrButton.text = getString(R.string.scan_parent_qr)
-                binding.generateQrButton.text = getString(R.string.show_child_qr)
             }
         }
     }
     
     private fun setupClickListeners() {
-        binding.generateQrButton.setOnClickListener {
-            generateQRCode()
-        }
+        // QR kod jest automatycznie generowany - nie potrzeba przycisku generate
         
         binding.scanQrButton.setOnClickListener {
             startQRScanner()
         }
         
+        // Przycisk refresh jest ukryty, ale może być użyty w przyszłości
         binding.refreshQrButton.setOnClickListener {
             generateQRCode()
         }
@@ -195,7 +192,7 @@ class PairingActivity : AppCompatActivity() {
     
     private fun showLoading(show: Boolean) {
         binding.progressBar.visibility = if (show) android.view.View.VISIBLE else android.view.View.GONE
-        binding.generateQrButton.isEnabled = !show
+        // generateQrButton został usunięty - QR kod jest automatycznie widoczny
         binding.scanQrButton.isEnabled = !show
         binding.refreshQrButton.isEnabled = !show
     }
