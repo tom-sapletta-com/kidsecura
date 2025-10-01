@@ -33,6 +33,7 @@ class QRScannerActivity : AppCompatActivity() {
     private lateinit var binding: ActivityQrscannerBinding
     private lateinit var qrCodeGenerator: QRCodeGenerator
     private lateinit var pairingService: PairingService
+    private val gson = Gson()
     
     private var isScanning = false
     

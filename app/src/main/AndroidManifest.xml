@@ -77,6 +77,13 @@
             android:label="@string/logs_title"
             android:parentActivityName=".MainActivity" />
 
+        <activity
+            android:name=".QRScannerActivity"
+            android:exported="false"
+            android:label="@string/scan_qr_title"
+            android:parentActivityName=".MainActivity"
+            android:screenOrientation="portrait" />
+
         <service
             android:name=".service.ScreenCaptureService"
             android:enabled="true"
