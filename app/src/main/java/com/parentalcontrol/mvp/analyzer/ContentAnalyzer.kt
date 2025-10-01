@@ -3,6 +3,7 @@ package com.parentalcontrol.mvp.analyzer
 import android.content.Context
 import android.graphics.Bitmap
 import android.util.Log
+import com.parentalcontrol.mvp.utils.PreferencesManager
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
@@ -35,24 +36,12 @@ class ContentAnalyzer(private val context: Context) {
     
     private var interpreter: Interpreter? = null
     private val textRecognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+    private val prefsManager = PreferencesManager(context)
     
-    // Lista słów kluczowych do wykrywania zagrożeń
-    private val threatKeywords = listOf(
-        // Przemoc
-        "zabić", "zabije", "zabiję", "śmierć", "samobójstwo", "krzywda", "ból",
-        "pobić", "pobiję", "uderzyć", "uderzę", "zniszczyć", "zniszczę",
-        
-        // Cyberprzemoc
-        "nienawidzę", "nienawiść", "głupi", "brzydki", "gruby", "idiota",
-        "debil", "frajer", "śmieć",
-        
-        // Grooming / nadużycia
-        "tajemnica", "nie mów", "sekret", "spotkajmy się", "sam na sam",
-        "zdjęcie", "nago", "pokażesz",
-        
-        // Substancje
-        "narkotyki", "alkohol", "papierosy", "używki", "dealer"
-    )
+    // Pobierz słowa kluczowe z preferencji użytkownika
+    private fun getThreatKeywords(): List<String> {
+        return prefsManager.getThreatKeywords()
+    }
     
     // Lista aplikacji wysokiego ryzyka
     private val riskyApps = listOf(
@@ -141,7 +130,8 @@ class ContentAnalyzer(private val context: Context) {
         val foundKeywords = mutableListOf<String>()
         var threatScore = 0f
         
-        // Sprawdź słowa kluczowe
+        // Sprawdź słowa kluczowe z preferencji użytkownika
+        val threatKeywords = getThreatKeywords()
         threatKeywords.forEach { keyword ->
             if (lowercaseText.contains(keyword)) {
                 foundKeywords.add(keyword)

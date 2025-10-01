@@ -49,4 +49,58 @@ class PreferencesManager(context: Context) {
     
     fun isDevicePaired(): Boolean = prefs.getBoolean(KEY_DEVICE_PAIRED, false)
     fun setDevicePaired(paired: Boolean) = prefs.edit().putBoolean(KEY_DEVICE_PAIRED, paired).apply()
+    
+    /**
+     * Pobiera listę słów kluczowych z preferencji
+     */
+    fun getThreatKeywords(): List<String> {
+        val json = prefs.getString(KEY_THREAT_KEYWORDS, null)
+        return if (json != null) {
+            try {
+                val type = object : TypeToken<List<String>>() {}.type
+                gson.fromJson(json, type) ?: getDefaultThreatKeywords()
+            } catch (e: Exception) {
+                getDefaultThreatKeywords()
+            }
+        } else {
+            getDefaultThreatKeywords()
+        }
+    }
+    
+    /**
+     * Zapisuje listę słów kluczowych do preferencji
+     */
+    fun setThreatKeywords(keywords: List<String>) {
+        val json = gson.toJson(keywords)
+        prefs.edit().putString(KEY_THREAT_KEYWORDS, json).apply()
+    }
+    
+    /**
+     * Resetuje słowa kluczowe do domyślnych
+     */
+    fun resetThreatKeywordsToDefault() {
+        setThreatKeywords(getDefaultThreatKeywords())
+    }
+    
+    /**
+     * Zwraca domyślną listę słów kluczowych
+     */
+    private fun getDefaultThreatKeywords(): List<String> {
+        return listOf(
+            // Przemoc
+            "zabić", "zabije", "zabiję", "śmierć", "samobójstwo", "krzywda", "ból",
+            "pobić", "pobiję", "uderzyć", "uderzę", "zniszczyć", "zniszczę",
+            
+            // Cyberprzemoc
+            "nienawidzę", "nienawiść", "głupi", "brzydki", "gruby", "idiota",
+            "debil", "frajer", "śmieć",
+            
+            // Grooming / nadużycia
+            "tajemnica", "nie mów", "sekret", "spotkajmy się", "sam na sam",
+            "zdjęcie", "nago", "pokażesz",
+            
+            // Substancje
+            "narkotyki", "alkohol", "papierosy", "używki", "dealer"
+        )
+    }
 }

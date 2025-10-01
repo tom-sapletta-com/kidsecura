@@ -126,6 +126,11 @@ class MainActivity : AppCompatActivity() {
                 startActivity(Intent(this@MainActivity, LogViewerActivity::class.java))
             }
             
+            // Edytor słów kluczowych
+            btnKeywordsEditor.setOnClickListener {
+                startActivity(Intent(this@MainActivity, KeywordsEditorActivity::class.java))
+            }
+            
             // Parowanie urządzeń
             btnPairDevice.setOnClickListener {
                 showDeviceTypeSelectionDialog()

@@ -91,6 +91,12 @@
             android:parentActivityName=".MainActivity"
             android:screenOrientation="portrait" />
 
+        <activity
+            android:name=".KeywordsEditorActivity"
+            android:exported="false"
+            android:label="@string/keywords_editor_title"
+            android:parentActivityName=".MainActivity" />
+
         <service
             android:name=".service.ScreenCaptureService"
             android:enabled="true"
