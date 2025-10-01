@@ -62,6 +62,12 @@
     <color name="status_warning">#FF9800</color>
     <color name="status_danger">#F44336</color>
     
+    <!-- Incident severity colors -->
+    <color name="severity_critical">#D32F2F</color>
+    <color name="severity_high">#F57C00</color>
+    <color name="severity_medium">#FF9800</color>
+    <color name="severity_low">#4CAF50</color>
+    
     <!-- Common colors -->
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
