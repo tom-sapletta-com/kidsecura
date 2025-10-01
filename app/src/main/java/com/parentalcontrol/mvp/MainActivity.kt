@@ -921,6 +921,117 @@ class MainActivity : AppCompatActivity() {
             systemLogger.e(TAG, "❌ Error updating stealth UI", e)
         }
     }
+    
+    /**
+     * Wyświetla dialog konfiguracji Telegram/WhatsApp messaging
+     */
+    private fun showMessagingConfigDialog() {
+        try {
+            systemLogger.d(TAG, "📱 showMessagingConfigDialog() - START")
+            
+            // Create dialog layout
+            val dialogView = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(32, 32, 32, 32)
+            }
+            
+            // Title
+            val titleView = TextView(this).apply {
+                text = "📱 Konfiguracja Alertów"
+                textSize = 18f
+                setTypeface(null, android.graphics.Typeface.BOLD)
+                setPadding(0, 0, 0, 24)
+            }
+            dialogView.addView(titleView)
+            
+            // Telegram section
+            val telegramTokenInput = EditText(this).apply {
+                hint = "Telegram Bot Token (od @BotFather)"
+                setPadding(16, 16, 16, 16)
+                inputType = android.text.InputType.TYPE_CLASS_TEXT
+            }
+            dialogView.addView(telegramTokenInput)
+            
+            val telegramChatInput = EditText(this).apply {
+                hint = "Telegram Chat ID (np. 123456789)"
+                setPadding(16, 16, 16, 16)
+                inputType = android.text.InputType.TYPE_CLASS_NUMBER
+            }
+            dialogView.addView(telegramChatInput)
+            
+            // Test button
+            val testButton = android.widget.Button(this).apply {
+                text = "🧪 Wyślij Test"
+                setOnClickListener {
+                    testMessaging()
+                }
+            }
+            dialogView.addView(testButton)
+            
+            // Show dialog
+            AlertDialog.Builder(this)
+                .setTitle("Konfiguracja Alertów")
+                .setView(dialogView)
+                .setPositiveButton("💾 Zapisz") { _, _ ->
+                    try {
+                        val botToken = telegramTokenInput.text.toString().trim()
+                        val chatId = telegramChatInput.text.toString().trim()
+                        
+                        if (botToken.isNotEmpty() && chatId.isNotEmpty()) {
+                            messagingManager.enableTelegram(botToken, listOf(chatId))
+                            systemLogger.d(TAG, "✅ Telegram enabled")
+                            Toast.makeText(this, "✅ Telegram skonfigurowany!", Toast.LENGTH_SHORT).show()
+                        } else {
+                            messagingManager.disableTelegram()
+                            systemLogger.d(TAG, "❌ Telegram disabled - empty config")
+                            Toast.makeText(this, "❌ Telegram wyłączony", Toast.LENGTH_SHORT).show()
+                        }
+                        
+                    } catch (e: Exception) {
+                        systemLogger.e(TAG, "❌ Error saving messaging config", e)
+                        Toast.makeText(this, "Błąd zapisu: ${e.message}", Toast.LENGTH_LONG).show()
+                    }
+                }
+                .setNegativeButton("Anuluj", null)
+                .show()
+                
+            systemLogger.d(TAG, "✅ Messaging config dialog shown successfully")
+            
+        } catch (e: Exception) {
+            systemLogger.e(TAG, "❌ Error in showMessagingConfigDialog()", e)
+            Toast.makeText(this, "Błąd dialogu alertów: ${e.message}", Toast.LENGTH_LONG).show()
+        }
+    }
+    
+    /**
+     * Testuje konfigurację messaging
+     */
+    private fun testMessaging() {
+        lifecycleScope.launch {
+            try {
+                systemLogger.d(TAG, "🧪 Testing messaging configuration...")
+                val success = messagingManager.sendTestMessage()
+                
+                val message = if (success) {
+                    "✅ Test wiadomości wysłany pomyślnie!"
+                } else {
+                    "⚠️ Test wiadomości nie został wysłany. Sprawdź konfigurację."
+                }
+                
+                runOnUiThread {
+                    Toast.makeText(this@MainActivity, message, Toast.LENGTH_LONG).show()
+                }
+                
+                systemLogger.d(TAG, "🧪 Messaging test completed: success=$success")
+                
+            } catch (e: Exception) {
+                systemLogger.e(TAG, "❌ Error testing messaging", e)
+                runOnUiThread {
+                    Toast.makeText(this@MainActivity, "Błąd testu: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+    }
 
     override fun onDestroy() {
         super.onDestroy()
