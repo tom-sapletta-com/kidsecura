@@ -51,6 +51,11 @@ class PairingService(private val context: Context) {
         private const val RETRY_DELAY_MULTIPLIER = 2.0 // Exponential backoff
         private const val RECONNECTION_DELAY = 5000L // 5 seconds
         private const val MAX_RECONNECTION_ATTEMPTS = 5
+        
+        // Circuit breaker constants
+        private const val CIRCUIT_BREAKER_FAILURE_THRESHOLD = 5
+        private const val CIRCUIT_BREAKER_RECOVERY_TIMEOUT = 30000L // 30 seconds
+        private const val CIRCUIT_BREAKER_SUCCESS_THRESHOLD = 3
     }
     
     private val prefs: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -82,6 +87,13 @@ class PairingService(private val context: Context) {
     private val isReconnecting = AtomicBoolean(false)
     private val isConnectionHealthy = AtomicBoolean(false)
     private var reconnectionJob: Job? = null
+    
+    // Circuit breaker state for enhanced error handling
+    private val circuitBreakerFailures = AtomicInteger(0)
+    private val circuitBreakerSuccesses = AtomicInteger(0)
+    private val isCircuitBreakerOpen = AtomicBoolean(false)
+    private var circuitBreakerOpenTime = 0L
+    private val lastKnownErrors = mutableListOf<Pair<Long, String>>() // timestamp + error message
     
     init {
         loadPairingData()
@@ -1122,20 +1134,175 @@ class PairingService(private val context: Context) {
     }
     
     /**
-     * Czyści zasoby
+     * Enhanced cleanup z proper resource management
      */
     fun cleanup() {
-        heartbeatJob?.cancel()
-        serverJob?.cancel()
+        Log.d(TAG, "🧹 Starting comprehensive cleanup...")
         
         try {
-            serverSocket?.close()
-            clientSocket?.close()
+            // Stop all background jobs
+            stopAllJobs()
+            
+            // Clean up network resources
+            cleanupNetworkResources()
+            
+            // Reset connection state
+            resetConnectionState()
+            
+            // Cancel service scope last
+            serviceScope.cancel()
+            
+            Log.d(TAG, "✅ Cleanup completed successfully")
         } catch (e: Exception) {
-            Log.e(TAG, "Error during cleanup", e)
+            Log.e(TAG, "❌ Error during comprehensive cleanup", e)
         }
+    }
+    
+    /**
+     * Zatrzymuje wszystkie background jobs
+     */
+    private fun stopAllJobs() {
+        Log.d(TAG, "🛑 Stopping all background jobs...")
         
-        serviceScope.cancel()
+        try {
+            heartbeatJob?.let { job ->
+                if (job.isActive) {
+                    Log.d(TAG, "  - Cancelling heartbeat job")
+                    job.cancel()
+                }
+            }
+            
+            serverJob?.let { job ->
+                if (job.isActive) {
+                    Log.d(TAG, "  - Cancelling server job")
+                    job.cancel()
+                }
+            }
+            
+            reconnectionJob?.let { job ->
+                if (job.isActive) {
+                    Log.d(TAG, "  - Cancelling reconnection job")
+                    job.cancel()
+                }
+            }
+            
+            Log.d(TAG, "✅ All background jobs stopped")
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error stopping background jobs", e)
+        }
+    }
+    
+    /**
+     * Czyści zasoby sieciowe
+     */
+    private fun cleanupNetworkResources() {
+        Log.d(TAG, "🌐 Cleaning up network resources...")
+        
+        try {
+            // Close server socket
+            serverSocket?.let { socket ->
+                if (!socket.isClosed) {
+                    Log.d(TAG, "  - Closing server socket on port ${socket.localPort}")
+                    socket.close()
+                }
+            }
+            
+            // Close client socket
+            clientSocket?.let { socket ->
+                if (!socket.isClosed) {
+                    Log.d(TAG, "  - Closing client socket to ${socket.remoteSocketAddress}")
+                    socket.close()
+                }
+            }
+            
+            // Shutdown OkHttp client connection pool
+            try {
+                okHttpClient.connectionPool.evictAll()
+                Log.d(TAG, "  - Evicted all HTTP connections from pool")
+            } catch (e: Exception) {
+                Log.w(TAG, "  - Warning: Could not evict HTTP connections: ${e.message}")
+            }
+            
+            Log.d(TAG, "✅ Network resources cleaned up")
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error cleaning up network resources", e)
+        }
+    }
+    
+    /**
+     * Resetuje stan połączenia
+     */
+    private fun resetConnectionState() {
+        Log.d(TAG, "🔄 Resetting connection state...")
+        
+        try {
+            // Reset atomic flags
+            isReconnecting.set(false)
+            isConnectionHealthy.set(false)
+            retryAttempts.set(0)
+            reconnectionAttempts.set(0)
+            
+            // Clear connection data
+            currentPairingData = null
+            serverSocket = null
+            clientSocket = null
+            
+            // Reset jobs references
+            heartbeatJob = null
+            serverJob = null
+            reconnectionJob = null
+            
+            Log.d(TAG, "✅ Connection state reset")
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error resetting connection state", e)
+        }
+    }
+    
+    /**
+     * Graceful shutdown z timeout
+     */
+    fun gracefulShutdown(timeoutMs: Long = 5000L) {
+        Log.d(TAG, "🔄 Starting graceful shutdown with timeout: ${timeoutMs}ms")
+        
+        serviceScope.launch {
+            try {
+                // Stop accepting new connections
+                stopAutomaticReconnection()
+                
+                // Send disconnect message to paired device if connected
+                currentPairingData?.let { pairingData ->
+                    try {
+                        val disconnectMessage = RemoteMessage(
+                            senderId = pairingData.deviceId,
+                            recipientId = pairingData.deviceId,
+                            messageType = MessageType.PAIRING_REQUEST, // Use existing enum value
+                            payload = gson.toJson(mapOf("action" to "disconnect")),
+                            timestamp = System.currentTimeMillis()
+                        )
+                        
+                        executeWithRetry("graceful_disconnect", maxAttempts = 1) {
+                            sendMessage(disconnectMessage, pairingData)
+                        }
+                        
+                        Log.d(TAG, "📤 Disconnect notification sent")
+                    } catch (e: Exception) {
+                        Log.w(TAG, "⚠️ Could not send disconnect notification: ${e.message}")
+                    }
+                }
+                
+                // Wait a moment for pending operations
+                delay(1000L)
+                
+                // Perform cleanup
+                cleanup()
+                
+                Log.d(TAG, "✅ Graceful shutdown completed")
+            } catch (e: Exception) {
+                Log.e(TAG, "❌ Error during graceful shutdown", e)
+                // Force cleanup anyway
+                cleanup()
+            }
+        }
     }
     
     /**
