@@ -4,6 +4,12 @@ Aplikacja Android do monitorowania aktywności dzieci i przeciwdziałania przemo
 
 # Aplikacja Ochrony Rodzicielskiej - MVP
 
+![install.png](install.png)
+
+![allow.png](allow.png)
+
+![yes.png](yes.png)
+
 ## 📱 Opis projektu
 
 Aplikacja Android do monitorowania aktywności dzieci na urządzeniu mobilnym. Wykorzystuje MediaProjection API do przechwytywania ekranu, ML Kit do OCR oraz modele TensorFlow Lite do wykrywania potencjalnie szkodliwych treści.
