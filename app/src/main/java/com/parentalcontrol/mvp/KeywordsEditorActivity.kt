@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
+import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
@@ -89,8 +90,8 @@ class KeywordsEditorActivity : AppCompatActivity() {
         val keywordView = LayoutInflater.from(this)
             .inflate(R.layout.item_keyword, binding.layoutKeywords, false)
         
-        val tvKeyword = keywordView.findViewById<TextView>(R.id.tvKeyword)
-        val btnDelete = keywordView.findViewById<Button>(R.id.btnDeleteKeyword)
+        val tvKeyword = keywordView.findViewById<TextView>(R.id.keywordText)
+        val btnDelete = keywordView.findViewById<ImageButton>(R.id.removeButton)
         
         tvKeyword.text = keyword
         
@@ -162,7 +163,7 @@ class KeywordsEditorActivity : AppCompatActivity() {
     private fun isKeywordAlreadyExists(keyword: String): Boolean {
         for (i in 0 until binding.layoutKeywords.childCount) {
             val child = binding.layoutKeywords.getChildAt(i)
-            val tvKeyword = child.findViewById<TextView>(R.id.tvKeyword)
+            val tvKeyword = child.findViewById<TextView>(R.id.keywordText)
             if (tvKeyword?.text?.toString()?.lowercase() == keyword) {
                 return true
             }
@@ -174,7 +175,7 @@ class KeywordsEditorActivity : AppCompatActivity() {
         val keywords = mutableListOf<String>()
         for (i in 0 until binding.layoutKeywords.childCount) {
             val child = binding.layoutKeywords.getChildAt(i)
-            val tvKeyword = child.findViewById<TextView>(R.id.tvKeyword)
+            val tvKeyword = child.findViewById<TextView>(R.id.keywordText)
             tvKeyword?.text?.toString()?.let { keywords.add(it) }
         }
         return keywords

@@ -1,6 +1,7 @@
 package com.parentalcontrol.mvp
 
 import android.os.Bundle
+import com.parentalcontrol.mvp.adapters.KeywordsAdapter
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.widget.addTextChangedListener
