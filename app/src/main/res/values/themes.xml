@@ -45,4 +45,10 @@
         <!-- Customize your theme here. -->
         <item name="android:windowBackground">@color/md_theme_light_background</item>
     </style>
+
+    <!-- Theme without ActionBar for activities with custom headers -->
+    <style name="Theme.ParentalControl.NoActionBar" parent="Theme.ParentalControl">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+    </style>
 </resources>
