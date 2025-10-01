@@ -75,7 +75,9 @@ class MainActivity : AppCompatActivity() {
             
             // Konfiguracja interwału
             seekBarInterval.apply {
-                min = 1
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    min = 1
+                }
                 max = 10
                 progress = prefsManager.getCaptureInterval()
                 setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
