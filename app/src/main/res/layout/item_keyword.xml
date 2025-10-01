@@ -9,24 +9,44 @@
     android:layout_marginBottom="4dp"
     android:background="@drawable/keyword_item_background">
 
+    <!-- Priority Indicator -->
+    <View
+        android:id="@+id/priorityIndicator"
+        android:layout_width="4dp"
+        android:layout_height="match_parent"
+        android:background="@color/status_safe"
+        android:layout_marginEnd="8dp" />
+
     <TextView
-        android:id="@+id/tvKeyword"
+        android:id="@+id/keywordText"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
         android:text="przykładowe słowo"
         android:textSize="16sp"
-        android:textColor="@android:color/black"
+        android:textColor="@color/md_theme_light_onSurface"
         android:paddingStart="8dp"
         android:paddingEnd="8dp" />
 
+    <!-- Edit Button -->
     <ImageButton
-        android:id="@+id/btnDeleteKeyword"
+        android:id="@+id/editButton"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:src="@drawable/ic_edit"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="Edit keyword"
+        app:tint="@color/md_theme_light_primary"
+        android:layout_marginEnd="4dp" />
+
+    <!-- Remove Button -->
+    <ImageButton
+        android:id="@+id/removeButton"
         android:layout_width="36dp"
         android:layout_height="36dp"
         android:src="@drawable/ic_delete"
         android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="@string/delete_keyword"
-        app:tint="@android:color/holo_red_dark" />
+        android:contentDescription="Delete keyword"
+        app:tint="@color/status_danger" />
 
 </LinearLayout>
