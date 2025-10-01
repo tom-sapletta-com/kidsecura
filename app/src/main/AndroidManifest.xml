@@ -55,6 +55,12 @@
             android:label="@string/history_title"
             android:parentActivityName=".MainActivity" />
 
+        <activity
+            android:name=".LogViewerActivity"
+            android:exported="false"
+            android:label="@string/logs_title"
+            android:parentActivityName=".MainActivity" />
+
         <service
             android:name=".service.ScreenCaptureService"
             android:enabled="true"
