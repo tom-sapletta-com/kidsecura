@@ -28,6 +28,7 @@ import com.parentalcontrol.mvp.utils.FileLogger
 import com.parentalcontrol.mvp.utils.SystemLogger
 import com.parentalcontrol.mvp.messaging.MessagingIntegrationManager
 import kotlinx.coroutines.*
+import androidx.lifecycle.lifecycleScope
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
