@@ -190,7 +190,7 @@ class QRScannerActivity : AppCompatActivity() {
         
         // Przekaż dane parowania z powrotem
         val resultIntent = Intent().apply {
-            putExtra(EXTRA_PAIRING_DATA, qrCodeGenerator.gson.toJson(pairingData))
+            putExtra(EXTRA_PAIRING_DATA, qrCodeGenerator.pairingDataToJson(pairingData))
         }
         
         setResult(RESULT_PAIRING_SUCCESS, resultIntent)

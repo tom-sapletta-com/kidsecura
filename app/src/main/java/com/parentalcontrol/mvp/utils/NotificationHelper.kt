@@ -1,13 +1,16 @@
 package com.parentalcontrol.mvp.utils
 
+import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
 import com.parentalcontrol.mvp.EventHistoryActivity
 import com.parentalcontrol.mvp.R
 
@@ -63,7 +66,19 @@ class NotificationHelper(private val context: Context) {
             .build()
         
         with(NotificationManagerCompat.from(context)) {
-            notify(notificationIdCounter++, notification)
+            // Sprawdź uprawnienia do powiadomień przed wysłaniem
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                if (ContextCompat.checkSelfPermission(
+                        context,
+                        Manifest.permission.POST_NOTIFICATIONS
+                    ) == PackageManager.PERMISSION_GRANTED
+                ) {
+                    notify(notificationIdCounter++, notification)
+                }
+            } else {
+                // Na starszych wersjach Androida nie ma potrzeby sprawdzania uprawnień
+                notify(notificationIdCounter++, notification)
+            }
         }
     }
 }

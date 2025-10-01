@@ -204,7 +204,7 @@ class PairingActivity : AppCompatActivity() {
             
             val pairedInfo = buildString {
                 append("${getString(R.string.paired_with)}: ${status.pairedDeviceName}\n")
-                append("${getString(R.string.device_type)}: ${getDeviceTypeString(status.pairedDeviceType)}\n")
+                append("${getString(R.string.device_type)}: ${getDeviceTypeString(status.pairedDeviceType ?: DeviceType.CHILD)}\n")
                 append("${getString(R.string.connection_status_label)}: ${getConnectionStatusString(status.connectionStatus)}\n")
                 
                 status.lastHeartbeat?.let { heartbeat ->

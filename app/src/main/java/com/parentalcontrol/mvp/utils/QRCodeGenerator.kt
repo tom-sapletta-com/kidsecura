@@ -208,6 +208,40 @@ class QRCodeGenerator(private val context: Context) {
     }
     
     /**
+     * Generuje dane parowania dla podanego typu urządzenia (publiczna metoda)
+     */
+    fun generatePairingData(deviceType: DeviceType): PairingData? {
+        return try {
+            createPairingData(deviceType)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error generating pairing data", e)
+            null
+        }
+    }
+    
+    /**
+     * Generuje kod QR dla podanych danych parowania (publiczna metoda)
+     */
+    fun generateQRCode(pairingData: PairingData, width: Int, height: Int): Bitmap? {
+        return try {
+            val qrContent = gson.toJson(pairingData)
+            Log.d(TAG, "Generated QR code: $qrContent")
+            
+            val writer = MultiFormatWriter()
+            val hints = hashMapOf<EncodeHintType, Any>()
+            hints[EncodeHintType.CHARACTER_SET] = "UTF-8"
+            hints[EncodeHintType.MARGIN] = 1
+            
+            val bitMatrix = writer.encode(qrContent, BarcodeFormat.QR_CODE, width, height, hints)
+            convertBitMatrixToBitmap(bitMatrix)
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Error generating QR code", e)
+            null
+        }
+    }
+    
+    /**
      * Parsuje dane parowania z zawartości QR kodu
      */
     fun parsePairingData(qrContent: String): PairingData? {
@@ -217,6 +251,13 @@ class QRCodeGenerator(private val context: Context) {
             Log.e(TAG, "Error parsing pairing data", e)
             null
         }
+    }
+    
+    /**
+     * Konwertuje PairingData na JSON string
+     */
+    fun pairingDataToJson(pairingData: PairingData): String {
+        return gson.toJson(pairingData)
     }
     
     /**
