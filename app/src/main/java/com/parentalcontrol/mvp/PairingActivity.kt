@@ -205,11 +205,11 @@ class PairingActivity : AppCompatActivity() {
             val pairedInfo = buildString {
                 append("${getString(R.string.paired_with)}: ${status.pairedDeviceName}\n")
                 append("${getString(R.string.device_type)}: ${getDeviceTypeString(status.pairedDeviceType)}\n")
-                append("${getString(R.string.connection_status)}: ${getConnectionStatusString(status.connectionStatus)}\n")
+                append("${getString(R.string.connection_status_label)}: ${getConnectionStatusString(status.connectionStatus)}\n")
                 
                 status.lastHeartbeat?.let { heartbeat ->
                     val timeAgo = (System.currentTimeMillis() - heartbeat) / 1000
-                    append("${getString(R.string.last_heartbeat)}: ${timeAgo}s ago")
+                    append("${getString(R.string.last_heartbeat_label)}: ${timeAgo}s ago")
                 }
             }
             

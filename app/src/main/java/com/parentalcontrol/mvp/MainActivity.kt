@@ -17,6 +17,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.parentalcontrol.mvp.databinding.ActivityMainBinding
+import com.parentalcontrol.mvp.model.DeviceType
 import com.parentalcontrol.mvp.service.ScreenCaptureService
 import com.parentalcontrol.mvp.utils.PreferencesManager
 
@@ -115,9 +116,9 @@ class MainActivity : AppCompatActivity() {
                 startActivity(Intent(this@MainActivity, LogViewerActivity::class.java))
             }
             
-            // Parowanie (placeholder)
+            // Parowanie urządzeń
             btnPairDevice.setOnClickListener {
-                Toast.makeText(this@MainActivity, "Funkcja parowania - w przygotowaniu", Toast.LENGTH_SHORT).show()
+                showDeviceTypeSelectionDialog()
             }
         }
     }
@@ -158,6 +159,29 @@ class MainActivity : AppCompatActivity() {
             }
             .setNegativeButton(R.string.permission_cancel, null)
             .show()
+    }
+    
+    private fun showDeviceTypeSelectionDialog() {
+        val options = arrayOf(
+            getString(R.string.device_type_parent),
+            getString(R.string.device_type_child)
+        )
+        
+        AlertDialog.Builder(this)
+            .setTitle(R.string.select_device_type)
+            .setItems(options) { _, which ->
+                val deviceType = if (which == 0) DeviceType.PARENT else DeviceType.CHILD
+                startPairingActivity(deviceType)
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
+    }
+    
+    private fun startPairingActivity(deviceType: DeviceType) {
+        val intent = Intent(this, PairingActivity::class.java).apply {
+            putExtra(PairingActivity.EXTRA_DEVICE_TYPE, deviceType)
+        }
+        startActivity(intent)
     }
     
     private fun showConsentDialog() {

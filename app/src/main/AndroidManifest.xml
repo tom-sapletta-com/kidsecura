@@ -84,6 +84,13 @@
             android:parentActivityName=".MainActivity"
             android:screenOrientation="portrait" />
 
+        <activity
+            android:name=".PairingActivity"
+            android:exported="false"
+            android:label="@string/pairing_title"
+            android:parentActivityName=".MainActivity"
+            android:screenOrientation="portrait" />
+
         <service
             android:name=".service.ScreenCaptureService"
             android:enabled="true"

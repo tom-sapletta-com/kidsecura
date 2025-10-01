@@ -145,6 +145,50 @@
     <string name="real_time_monitoring">Monitorowanie w czasie rzeczywistym</string>
     <string name="monitoring_frequency">Częstotliwość: co %d sekund</string>
     
+    <!-- Additional Pairing Strings -->
+    <string name="device_pairing">Parowanie urządzeń</string>
+    <string name="parent_pairing_title">Parowanie - Urządzenie rodzica</string>
+    <string name="child_pairing_title">Parowanie - Urządzenie dziecka</string>
+    <string name="parent_pairing_instructions">Pokaż ten kod QR dziecku lub zeskanuj kod QR z urządzenia dziecka</string>
+    <string name="child_pairing_instructions">Pokaż ten kod QR rodzicowi lub zeskanuj kod QR z urządzenia rodzica</string>
+    <string name="scan_child_qr">Skanuj kod QR dziecka</string>
+    <string name="show_parent_qr">Pokaż kod QR rodzica</string>
+    <string name="scan_parent_qr">Skanuj kod QR rodzica</string>
+    <string name="show_child_qr">Pokaż kod QR dziecka</string>
+    <string name="pairing_instructions">Aby sparować urządzenia, wygeneruj kod QR i pokaż go drugiemu urządzeniu lub zeskanuj kod QR z drugiego urządzenia.</string>
+    <string name="qr_code_title">Kod QR do parowania</string>
+    <string name="qr_code_description">Kod QR zawierający dane parowania urządzenia</string>
+    <string name="generating_qr_code">Generowanie kodu QR...</string>
+    <string name="qr_code_ready">Kod QR jest gotowy</string>
+    <string name="error_generating_qr">Błąd generowania kodu QR</string>
+    <string name="error_device_info">Błąd pobierania informacji o urządzeniu</string>
+    <string name="refresh_qr">Odśwież</string>
+    <string name="generate_qr">Generuj QR</string>
+    <string name="device_details">Szczegóły urządzenia</string>
+    <string name="device_name">Nazwa urządzenia</string>
+    <string name="device_type">Typ urządzenia</string>
+    <string name="ip_address">Adres IP</string>
+    <string name="wifi_network">Sieć WiFi</string>
+    <string name="pairing_code">Kod parowania</string>
+    <string name="parent_device">Urządzenie rodzica</string>
+    <string name="child_device">Urządzenie dziecka</string>
+    <string name="paired_device">Sparowane urządzenie</string>
+    <string name="paired_with">Sparowane z</string>
+    <string name="connection_status_label">Status połączenia</string>
+    <string name="last_heartbeat_label">Ostatni sygnał życia</string>
+    <string name="status_connected">Połączono</string>
+    <string name="status_disconnected">Rozłączono</string>
+    <string name="status_connecting">Łączenie...</string>
+    <string name="status_error">Błąd</string>
+    <string name="device_unpaired">Urządzenie rozłączone</string>
+    <string name="device_unpaired_success">Urządzenie zostało pomyślnie rozłączone</string>
+    <string name="error_unpairing">Błąd podczas rozłączania urządzenia</string>
+    <string name="unpair_device">Rozłącz urządzenie</string>
+    <string name="pairing_failed_unknown">Parowanie nieudane z nieznanego powodu</string>
+    <string name="pairing_help_title">Jak sparować urządzenia?</string>
+    <string name="pairing_help_description">1. Upewnij się, że oba urządzenia są w tej samej sieci WiFi\n2. Wygeneruj kod QR na jednym urządzeniu\n3. Zeskanuj go na drugim urządzeniu\n4. Poczekaj na potwierdzenie parowania</string>
+    <string name="back">Wstecz</string>
+    
     <!-- Errors -->
     <string name="error_generic">Wystąpił błąd. Spróbuj ponownie.</string>
     <string name="error_no_projection">Nie można uzyskać dostępu do ekranu</string>
