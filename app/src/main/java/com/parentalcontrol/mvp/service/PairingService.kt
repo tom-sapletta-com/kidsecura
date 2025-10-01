@@ -23,6 +23,9 @@ import java.io.OutputStreamWriter
 import java.io.PrintWriter
 import java.net.URLDecoder
 import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicBoolean
+import kotlinx.coroutines.delay
 
 class PairingService(private val context: Context) {
     
@@ -31,9 +34,23 @@ class PairingService(private val context: Context) {
         private const val PREFS_NAME = "pairing_prefs"
         private const val KEY_PAIRING_DATA = "pairing_data"
         private const val KEY_PAIRING_STATUS = "pairing_status"
-        private const val PAIRING_TIMEOUT = 30000L // 30 seconds
-        private const val HEARTBEAT_INTERVAL = 10000L // 10 seconds
-        private const val CONNECTION_TIMEOUT = 5000L // 5 seconds
+        private const val PAIRING_TIMEOUT = 10000L // 10 seconds (reduced from 30s)
+        private const val HEARTBEAT_INTERVAL = 5000L // 5 seconds (reduced from 10s) 
+        private const val CONNECTION_TIMEOUT = 3000L // 3 seconds (reduced from 5s)
+        private const val READ_TIMEOUT = 2000L // 2 seconds for faster reads
+        private const val WRITE_TIMEOUT = 2000L // 2 seconds for faster writes
+        
+        // Connection pooling constants
+        private const val MAX_CONNECTIONS = 5
+        private const val KEEP_ALIVE_DURATION = 30000L // 30 seconds
+        private const val MAX_IDLE_CONNECTIONS = 3
+        
+        // Retry logic constants
+        private const val MAX_RETRY_ATTEMPTS = 3
+        private const val RETRY_DELAY_BASE = 1000L // 1 second
+        private const val RETRY_DELAY_MULTIPLIER = 2.0 // Exponential backoff
+        private const val RECONNECTION_DELAY = 5000L // 5 seconds
+        private const val MAX_RECONNECTION_ATTEMPTS = 5
     }
     
     private val prefs: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -45,14 +62,26 @@ class PairingService(private val context: Context) {
     private var currentPairingData: PairingData? = null
     private var pairingStatus = PairingStatus()
     
+    // Enhanced OkHttpClient with connection pooling and optimized timeouts
     private val okHttpClient = OkHttpClient.Builder()
         .connectTimeout(CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
-        .readTimeout(CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
-        .writeTimeout(CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
+        .readTimeout(READ_TIMEOUT, TimeUnit.MILLISECONDS)
+        .writeTimeout(WRITE_TIMEOUT, TimeUnit.MILLISECONDS)
+        .connectionPool(okhttp3.ConnectionPool(MAX_IDLE_CONNECTIONS, KEEP_ALIVE_DURATION, TimeUnit.MILLISECONDS))
+        .retryOnConnectionFailure(true) // Enable automatic retry on connection failures
+        .followRedirects(true)
+        .followSslRedirects(true)
         .build()
     
     private var heartbeatJob: Job? = null
     private var serverJob: Job? = null
+    
+    // Retry logic and reconnection state
+    private val retryAttempts = AtomicInteger(0)
+    private val reconnectionAttempts = AtomicInteger(0)
+    private val isReconnecting = AtomicBoolean(false)
+    private val isConnectionHealthy = AtomicBoolean(false)
+    private var reconnectionJob: Job? = null
     
     init {
         loadPairingData()

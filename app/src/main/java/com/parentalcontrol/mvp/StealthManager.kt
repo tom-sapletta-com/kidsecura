@@ -1,8 +1,10 @@
 package com.parentalcontrol.mvp
 
+import android.app.ActivityManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.pm.PackageManager
+import android.os.Build
 import android.util.Log
 import com.parentalcontrol.mvp.utils.PreferencesManager
 import com.parentalcontrol.mvp.utils.SystemLogger
@@ -141,25 +143,241 @@ class StealthManager(
     }
     
     /**
-     * Aktywuje zamaskowaną ikonę aplikacji (np. "System Update")
+     * Aktywuje zamaskowaną ikonę aplikacji według aktualnego trybu disguise
      */
     private fun enableDisguisedIcon() {
         try {
-            // Ta funkcjonalność będzie wymagała dodania activity-alias w AndroidManifest.xml
-            systemLogger.d(TAG, "🎭 Disguised icon would be enabled here (requires manifest setup)")
+            val disguiseMode = getDisguiseMode()
+            val aliasName = getAliasNameForDisguiseMode(disguiseMode)
+            
+            if (aliasName != null) {
+                val componentName = ComponentName(context, aliasName)
+                context.packageManager.setComponentEnabledSetting(
+                    componentName,
+                    PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+                    PackageManager.DONT_KILL_APP
+                )
+                systemLogger.d(TAG, "🎭 Enabled disguised icon: $disguiseMode ($aliasName)")
+            } else {
+                systemLogger.w(TAG, "⚠️ Unknown disguise mode: $disguiseMode")
+            }
         } catch (e: Exception) {
             systemLogger.e(TAG, "❌ Failed to enable disguised icon", e)
+            throw e
         }
     }
     
     /**
-     * Dezaktywuje zamaskowaną ikonę aplikacji
+     * Dezaktywuje wszystkie zamaskowane ikony aplikacji
      */
     private fun disableDisguisedIcon() {
         try {
-            systemLogger.d(TAG, "🎭 Disguised icon would be disabled here (requires manifest setup)")
+            val allAliases = listOf(
+                "com.parentalcontrol.mvp.SystemUpdateAlias",
+                "com.parentalcontrol.mvp.AndroidServiceAlias", 
+                "com.parentalcontrol.mvp.CalculatorAlias",
+                "com.parentalcontrol.mvp.NotesAlias"
+            )
+            
+            allAliases.forEach { aliasName ->
+                try {
+                    val componentName = ComponentName(context, aliasName)
+                    context.packageManager.setComponentEnabledSetting(
+                        componentName,
+                        PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                        PackageManager.DONT_KILL_APP
+                    )
+                    systemLogger.d(TAG, "🎭 Disabled disguised icon: $aliasName")
+                } catch (e: Exception) {
+                    systemLogger.w(TAG, "⚠️ Failed to disable alias $aliasName: ${e.message}")
+                }
+            }
         } catch (e: Exception) {
-            systemLogger.e(TAG, "❌ Failed to disable disguised icon", e)
+            systemLogger.e(TAG, "❌ Failed to disable disguised icons", e)
+        }
+    }
+    
+    /**
+     * Mapuje tryb disguise na nazwę activity-alias
+     */
+    private fun getAliasNameForDisguiseMode(disguiseMode: String): String? {
+        return when (disguiseMode) {
+            DISGUISE_SYSTEM_UPDATE -> "com.parentalcontrol.mvp.SystemUpdateAlias"
+            DISGUISE_ANDROID_SERVICE -> "com.parentalcontrol.mvp.AndroidServiceAlias"
+            DISGUISE_CALCULATOR -> "com.parentalcontrol.mvp.CalculatorAlias"
+            DISGUISE_NOTES -> "com.parentalcontrol.mvp.NotesAlias"
+            else -> null
+        }
+    }
+    
+    /**
+     * Usuwa aplikację z listy ostatnio używanych aplikacji (Recent Apps)
+     */
+    fun removeFromRecentApps() {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+                val appTasks = activityManager.appTasks
+                
+                appTasks.forEach { appTask ->
+                    try {
+                        appTask.finishAndRemoveTask()
+                        systemLogger.d(TAG, "👻 Removed task from recent apps")
+                    } catch (e: Exception) {
+                        systemLogger.w(TAG, "⚠️ Failed to remove specific task: ${e.message}")
+                    }
+                }
+                
+                systemLogger.d(TAG, "👻 Successfully removed app from recent apps list")
+            } else {
+                systemLogger.w(TAG, "⚠️ Recent apps removal not supported on API < 21")
+            }
+        } catch (e: Exception) {
+            systemLogger.e(TAG, "❌ Failed to remove from recent apps", e)
+        }
+    }
+    
+    /**
+     * Wykrywa próby inżynierii wstecznej lub manipulacji aplikacji
+     */
+    fun detectTamperingAttempts(): Boolean {
+        try {
+            var tamperingDetected = false
+            val detectionResults = mutableListOf<String>()
+            
+            // Sprawdź, czy aplikacja jest debugowana
+            if (isDebuggingDetected()) {
+                tamperingDetected = true
+                detectionResults.add("DEBUGGING_DETECTED")
+                systemLogger.w(TAG, "🚨 TAMPERING: Debugging detected")
+            }
+            
+            // Sprawdź, czy urządzenie jest zrootowane (podstawowe sprawdzenie)
+            if (isRootDetected()) {
+                tamperingDetected = true
+                detectionResults.add("ROOT_DETECTED") 
+                systemLogger.w(TAG, "🚨 TAMPERING: Root access detected")
+            }
+            
+            // Sprawdź integralność pakietu (podstawowe sprawdzenie)
+            if (isPackageIntegrityCompromised()) {
+                tamperingDetected = true
+                detectionResults.add("PACKAGE_INTEGRITY_COMPROMISED")
+                systemLogger.w(TAG, "🚨 TAMPERING: Package integrity compromised")
+            }
+            
+            if (tamperingDetected) {
+                val detectionInfo = detectionResults.joinToString(", ")
+                systemLogger.e(TAG, "🚨 CRITICAL: Tampering attempts detected: $detectionInfo")
+                
+                // Zapisz informację o wykrytej manipulacji
+                prefsManager.setStealthLastAccess(System.currentTimeMillis())
+                
+                // Opcjonalnie: ukryj aplikację automatycznie
+                if (isStealthModeEnabled()) {
+                    systemLogger.d(TAG, "🔒 Auto-hiding app due to tampering detection")
+                }
+            }
+            
+            return tamperingDetected
+        } catch (e: Exception) {
+            systemLogger.e(TAG, "❌ Error during tampering detection", e)
+            return false
+        }
+    }
+    
+    /**
+     * Wykrywa, czy aplikacja jest debugowana
+     */
+    private fun isDebuggingDetected(): Boolean {
+        return try {
+            // Sprawdź, czy debugger jest podłączony
+            android.os.Debug.isDebuggerConnected() || 
+            // Sprawdź, czy aplikacja działa w trybie debug
+            (context.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
+        } catch (e: Exception) {
+            false
+        }
+    }
+    
+    /**
+     * Podstawowe wykrywanie root (nie zawsze skuteczne, ale lepsze niż nic)
+     */
+    private fun isRootDetected(): Boolean {
+        return try {
+            // Sprawdź popularne pliki/aplikacje root
+            val rootIndicators = listOf(
+                "/system/app/Superuser.apk",
+                "/sbin/su",
+                "/system/bin/su",
+                "/system/xbin/su",
+                "/data/local/xbin/su",
+                "/data/local/bin/su",
+                "/system/sd/xbin/su",
+                "/system/bin/failsafe/su",
+                "/data/local/su"
+            )
+            
+            rootIndicators.any { path ->
+                try {
+                    java.io.File(path).exists()
+                } catch (e: Exception) {
+                    false
+                }
+            }
+        } catch (e: Exception) {
+            false
+        }
+    }
+    
+    /**
+     * Sprawdza integralność pakietu aplikacji (podstawowe sprawdzenie)
+     */
+    private fun isPackageIntegrityCompromised(): Boolean {
+        return try {
+            val packageManager = context.packageManager
+            val packageInfo = packageManager.getPackageInfo(context.packageName, PackageManager.GET_SIGNATURES)
+            
+            // Sprawdź, czy aplikacja ma podpis debugowy
+            val signatures = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                packageInfo.signingInfo?.apkContentsSigners
+            } else {
+                @Suppress("DEPRECATION")
+                packageInfo.signatures
+            }
+            
+            // Podstawowe sprawdzenie - jeśli nie ma podpisu, to podejrzane
+            signatures == null || signatures.isEmpty()
+        } catch (e: Exception) {
+            systemLogger.w(TAG, "⚠️ Could not verify package integrity: ${e.message}")
+            false
+        }
+    }
+    
+    /**
+     * Funkcja ochrony przed anti-tampering - ukrywa aplikację gdy wykryje manipulację
+     */
+    fun activateAntiTamperingProtection() {
+        try {
+            systemLogger.d(TAG, "🛡️ Activating anti-tampering protection")
+            
+            if (detectTamperingAttempts()) {
+                systemLogger.e(TAG, "🚨 CRITICAL: Tampering detected! Activating emergency stealth mode")
+                
+                // Automatycznie ukryj aplikację
+                if (!isStealthModeEnabled()) {
+                    enableStealthMode(null) // Bez PIN w trybie emergency
+                }
+                
+                // Usuń z recent apps
+                removeFromRecentApps()
+                
+                systemLogger.d(TAG, "🔒 Emergency stealth mode activated due to tampering")
+            } else {
+                systemLogger.d(TAG, "✅ No tampering detected - system integrity OK")
+            }
+        } catch (e: Exception) {
+            systemLogger.e(TAG, "❌ Error in anti-tampering protection", e)
         }
     }
     

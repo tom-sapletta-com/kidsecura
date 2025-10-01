@@ -75,8 +75,7 @@
             android:exported="true"
             android:enabled="false"
             android:icon="@drawable/ic_system_update"
-            android:label="System Update"
-            android:description="System security update manager">
+            android:label="System Update">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -90,8 +89,7 @@
             android:exported="true"
             android:enabled="false"
             android:icon="@drawable/ic_android_service"
-            android:label="Android Service"
-            android:description="System background service manager">
+            android:label="Android Service">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -105,8 +103,7 @@
             android:exported="true"
             android:enabled="false"
             android:icon="@drawable/ic_calculator"
-            android:label="Calculator"
-            android:description="Advanced calculator application">
+            android:label="Calculator">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -120,8 +117,7 @@
             android:exported="true"
             android:enabled="false"
             android:icon="@drawable/ic_notes"
-            android:label="Notes"
-            android:description="Simple note-taking app">
+            android:label="Notes">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

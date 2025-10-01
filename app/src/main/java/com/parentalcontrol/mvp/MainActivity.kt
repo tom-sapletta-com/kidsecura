@@ -95,6 +95,10 @@ class MainActivity : AppCompatActivity() {
             stealthManager = StealthManager(this, prefsManager, systemLogger)
             Log.d(TAG, "✅ StealthManager initialized")
             
+            // Aktywuj ochronę anti-tampering przy starcie aplikacji
+            stealthManager.activateAntiTamperingProtection()
+            Log.d(TAG, "🛡️ Anti-tampering protection activated")
+            
             setupUI()
             Log.d(TAG, "✅ setupUI() completed")
             
