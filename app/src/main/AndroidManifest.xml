@@ -55,6 +55,7 @@
         android:theme="@style/Theme.ParentalControl"
         tools:targetApi="31">
 
+        <!-- Main Activity - domyślna ikona aplikacji -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -64,6 +65,68 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- STEALTH MODE ALIASES - Zamaskowane ikony aplikacji -->
+        
+        <!-- Alias 1: System Update -->
+        <activity-alias
+            android:name=".SystemUpdateAlias"
+            android:targetActivity=".MainActivity"
+            android:exported="true"
+            android:enabled="false"
+            android:icon="@drawable/ic_system_update"
+            android:label="System Update"
+            android:description="System security update manager">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <!-- Alias 2: Android Service -->
+        <activity-alias
+            android:name=".AndroidServiceAlias"
+            android:targetActivity=".MainActivity"
+            android:exported="true"
+            android:enabled="false"
+            android:icon="@drawable/ic_android_service"
+            android:label="Android Service"
+            android:description="System background service manager">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <!-- Alias 3: Calculator -->
+        <activity-alias
+            android:name=".CalculatorAlias"
+            android:targetActivity=".MainActivity"
+            android:exported="true"
+            android:enabled="false"
+            android:icon="@drawable/ic_calculator"
+            android:label="Calculator"
+            android:description="Advanced calculator application">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <!-- Alias 4: Notes -->
+        <activity-alias
+            android:name=".NotesAlias"
+            android:targetActivity=".MainActivity"
+            android:exported="true"
+            android:enabled="false"
+            android:icon="@drawable/ic_notes"
+            android:label="Notes"
+            android:description="Simple note-taking app">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
 
         <activity
             android:name=".EventHistoryActivity"
