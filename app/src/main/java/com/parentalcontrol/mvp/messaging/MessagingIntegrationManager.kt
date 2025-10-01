@@ -99,7 +99,7 @@ class MessagingIntegrationManager(
         
         try {
             // Check if priority meets threshold (unless forced)
-            val priorityThreshold = preferencesManager.getInt(PREF_MESSAGE_PRIORITY_THRESHOLD, PRIORITY_MEDIUM)
+            val priorityThreshold = preferencesManager.prefs.getInt(PREF_MESSAGE_PRIORITY_THRESHOLD, PRIORITY_MEDIUM)
             if (!forceDelivery && priority < priorityThreshold) {
                 systemLogger.d(TAG, "⏸️ Alert priority ($priority) below threshold ($priorityThreshold), skipping")
                 return false
