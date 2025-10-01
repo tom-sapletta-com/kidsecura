@@ -1,5 +1,7 @@
 .idea
 venv
+.gradle
+build
 # Compiled class file
 *.class
 
