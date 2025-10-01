@@ -129,7 +129,16 @@ class MainActivity : AppCompatActivity() {
             
             // Edytor słów kluczowych
             btnKeywordsEditor.setOnClickListener {
-                startActivity(Intent(this@MainActivity, KeywordsEditorActivity::class.java))
+                try {
+                    Log.d("MainActivity", "🔧 Próba otwarcia KeywordsEditorActivity...")
+                    val intent = Intent(this@MainActivity, KeywordsEditorActivity::class.java)
+                    Log.d("MainActivity", "✅ Intent utworzony poprawnie")
+                    startActivity(intent)
+                    Log.d("MainActivity", "✅ startActivity wywołane poprawnie")
+                } catch (e: Exception) {
+                    Log.e("MainActivity", "❌ BŁĄD podczas otwierania KeywordsEditorActivity", e)
+                    Toast.makeText(this@MainActivity, "Błąd: ${e.message}", Toast.LENGTH_LONG).show()
+                }
             }
             
             // Zarządzanie urządzeniami

@@ -14,6 +14,8 @@ Aplikacja Android do monitorowania aktywności dzieci i przeciwdziałania przemo
 
 ![devices.png](devices.png)
 
+![alerts.png](alerts.png)
+
 ## 📱 Opis projektu
 
 Aplikacja Android do monitorowania aktywności dzieci na urządzeniu mobilnym. Wykorzystuje MediaProjection API do przechwytywania ekranu, ML Kit do OCR oraz modele TensorFlow Lite do wykrywania potencjalnie szkodliwych treści.

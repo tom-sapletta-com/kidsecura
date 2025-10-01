@@ -95,24 +95,28 @@
             android:name=".KeywordsEditorActivity"
             android:exported="false"
             android:label="@string/keywords_editor_title"
+            android:theme="@style/Theme.ParentalControl.NoActionBar"
             android:parentActivityName=".MainActivity" />
 
         <activity
             android:name=".PairedDevicesActivity"
             android:exported="false"
             android:label="Zarządzanie urządzeniami"
+            android:theme="@style/Theme.ParentalControl.NoActionBar"
             android:parentActivityName=".MainActivity" />
 
         <activity
             android:name=".IncidentsActivity"
             android:exported="false"
             android:label="Historia incydentów"
+            android:theme="@style/Theme.ParentalControl.NoActionBar"
             android:parentActivityName=".MainActivity" />
 
         <activity
             android:name=".AlertSettingsActivity"
             android:exported="false"
             android:label="Ustawienia alertów"
+            android:theme="@style/Theme.ParentalControl.NoActionBar"
             android:parentActivityName=".MainActivity" />
 
         <service
