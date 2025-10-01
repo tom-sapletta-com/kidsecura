@@ -17,6 +17,12 @@ import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.spec.SecretKeySpec
 import android.util.Base64
+import java.io.BufferedReader
+import java.io.InputStreamReader
+import java.io.OutputStreamWriter
+import java.io.PrintWriter
+import java.net.URLDecoder
+import java.util.concurrent.Executors
 
 class PairingService(private val context: Context) {
     
