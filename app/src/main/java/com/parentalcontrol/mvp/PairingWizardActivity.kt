@@ -64,7 +64,7 @@ class PairingWizardActivity : AppCompatActivity() {
         
         systemLogger = SystemLogger(this)
         preferencesManager = PreferencesManager(this)
-        pairingService = PairingService(this, systemLogger, preferencesManager)
+        pairingService = PairingService(this)
         
         systemLogger.d(TAG, "🧙‍♂️ Starting Pairing Wizard")
         

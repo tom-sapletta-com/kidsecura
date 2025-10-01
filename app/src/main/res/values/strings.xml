@@ -134,6 +134,7 @@
     <string name="cancel">Anuluj</string>
     
     <!-- Pairing Activity -->
+    <string name="pairing_wizard_title">🧙‍♂️ Kreator parowania</string>
     <string name="pairing_title">Parowanie urządzeń</string>
     <string name="device_type_parent">Urządzenie rodzica</string>
     <string name="device_type_child">Urządzenie dziecka</string>
