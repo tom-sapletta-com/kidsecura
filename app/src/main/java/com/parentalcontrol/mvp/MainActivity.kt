@@ -69,7 +69,7 @@ class MainActivity : AppCompatActivity() {
                 if (isServiceRunning) {
                     stopMonitoring()
                 } else {
-                    showConsentDialog()
+                    requestScreenCapture()
                 }
             }
             
@@ -186,21 +186,11 @@ class MainActivity : AppCompatActivity() {
         startActivity(intent)
     }
     
-    private fun showConsentDialog() {
-        AlertDialog.Builder(this)
-            .setTitle(R.string.consent_title)
-            .setMessage(R.string.consent_message)
-            .setPositiveButton(R.string.consent_agree) { _, _ ->
-                requestScreenCapture()
-            }
-            .setNegativeButton(R.string.consent_disagree) { _, _ ->
-                Toast.makeText(this, "Monitorowanie wymaga zgody", Toast.LENGTH_SHORT).show()
-            }
-            .setCancelable(false)
-            .show()
-    }
     
     private fun requestScreenCapture() {
+        // Pokaż krótką instrukcję użytkownikowi
+        Toast.makeText(this, R.string.screen_capture_instruction, Toast.LENGTH_LONG).show()
+        
         val captureIntent = mediaProjectionManager.createScreenCaptureIntent()
         projectionLauncher.launch(captureIntent)
     }

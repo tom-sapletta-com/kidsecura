@@ -108,8 +108,8 @@ class PairingActivity : AppCompatActivity() {
                 val pairingData = qrCodeGenerator.generatePairingData(deviceType)
                 
                 if (pairingData != null) {
-                    // Wygeneruj bitmap QR kodu
-                    val qrBitmap = qrCodeGenerator.generateQRCode(pairingData, 512, 512)
+                    // Wygeneruj bitmap QR kodu w wysokiej rozdzielczości dla pełnej szerokości ekranu
+                    val qrBitmap = qrCodeGenerator.generateQRCode(pairingData, 1024, 1024)
                     
                     if (qrBitmap != null) {
                         // Wyświetl QR kod

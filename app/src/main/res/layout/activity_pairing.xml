@@ -81,10 +81,13 @@
                 <!-- QR Code Image -->
                 <ImageView
                     android:id="@+id/qrCodeImage"
-                    android:layout_width="280dp"
-                    android:layout_height="280dp"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginEnd="16dp"
                     android:background="@color/white"
-                    android:scaleType="centerInside"
+                    android:scaleType="fitCenter"
+                    android:adjustViewBounds="true"
                     android:layout_marginBottom="16dp"
                     android:contentDescription="@string/qr_code_description" />
 

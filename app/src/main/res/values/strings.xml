@@ -197,4 +197,7 @@
     <string name="error_network_unavailable">Brak połączenia sieciowego</string>
     <string name="error_pairing_timeout">Przekroczono czas parowania</string>
     <string name="error_device_not_found">Nie znaleziono urządzenia</string>
+    
+    <!-- Screen capture instruction -->
+    <string name="screen_capture_instruction">Wybierz "Cały ekran" w następnym oknie, aby rozpocząć monitorowanie</string>
 </resources>
