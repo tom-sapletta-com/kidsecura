@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <com.journeyapps.barcodescanner.BarcodeView
+        android:id="@+id/zxing_barcode_surface"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <com.journeyapps.barcodescanner.ViewfinderView
+        android:id="@+id/zxing_viewfinder_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:zxing_viewfinder_laser_color="@color/md_theme_light_primary"
+        app:zxing_viewfinder_mask_color="#60000000"
+        app:zxing_viewfinder_border_color="@color/white"
+        app:zxing_viewfinder_border_width="2dp"
+        app:zxing_viewfinder_border_length="20dp"
+        app:zxing_viewfinder_border_corner_rounded="true" />
+
+    <!-- Overlay with instructions -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="bottom">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/qr_scanner_instructions"
+            android:textColor="@color/white"
+            android:textSize="16sp"
+            android:gravity="center"
+            android:padding="16dp"
+            android:background="#80000000"
+            android:layout_marginBottom="100dp" />
+
+    </LinearLayout>
+
+</merge>

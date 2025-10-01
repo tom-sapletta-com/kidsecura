@@ -89,9 +89,68 @@
     <string name="log_type_app_activity">APLIKACJA</string>
     <string name="log_type_unknown">INNE</string>
     
+    <!-- QR Scanner & Pairing -->
+    <string name="scan_qr_title">Skanuj kod QR</string>
+    <string name="qr_scanner_instructions">Skieruj kamerę na kod QR urządzenia do sparowania</string>
+    <string name="scanning_for_qr">Skanowanie kodu QR...</string>
+    <string name="processing_qr_code">Przetwarzanie kodu QR...</string>
+    <string name="starting_pairing_process">Rozpoczynanie parowania...</string>
+    <string name="pairing_successful">Parowanie zakończone sukcesem!</string>
+    <string name="pairing_failed">Parowanie nie powiodło się</string>
+    <string name="pairing_error_occurred">Wystąpił błąd podczas parowania</string>
+    <string name="invalid_qr_code">Nieprawidłowy kod QR</string>
+    <string name="different_wifi_network">Urządzenia muszą być w tej samej sieci WiFi</string>
+    <string name="invalid_device_type">Nieprawidłowy typ urządzenia</string>
+    <string name="paired_with_device">Sparowano z: %s</string>
+    <string name="camera_permission_required">Wymagane uprawnienie do kamery</string>
+    <string name="flashlight_on">Włącz latarkę</string>
+    <string name="flashlight_off">Wyłącz latarkę</string>
+    <string name="cancel">Anuluj</string>
+    
+    <!-- Pairing Activity -->
+    <string name="pairing_title">Parowanie urządzeń</string>
+    <string name="device_type_parent">Urządzenie rodzica</string>
+    <string name="device_type_child">Urządzenie dziecka</string>
+    <string name="select_device_type">Wybierz typ urządzenia:</string>
+    <string name="generate_qr_code">Generuj kod QR</string>
+    <string name="scan_qr_code">Skanuj kod QR</string>
+    <string name="qr_code_instructions">Pokaż ten kod urządzeniu do sparowania lub zeskanuj kod z drugiego urządzenia</string>
+    <string name="pairing_code_label">Kod parowania:</string>
+    <string name="device_info">Urządzenie: %1$s\nIP: %2$s\nSieć: %3$s</string>
+    <string name="connection_status">Status połączenia: %s</string>
+    <string name="connected">Połączono</string>
+    <string name="disconnected">Rozłączono</string>
+    <string name="connecting">Łączenie...</string>
+    <string name="connection_error">Błąd połączenia</string>
+    
+    <!-- Remote Monitoring -->
+    <string name="remote_monitoring_title">Zdalne monitorowanie</string>
+    <string name="current_app_label">Aktualna aplikacja:</string>
+    <string name="monitoring_interval_label">Interwał monitorowania:</string>
+    <string name="monitoring_interval_seconds">%d sekund</string>
+    <string name="last_heartbeat">Ostatni kontakt: %s</string>
+    <string name="device_status">Status urządzenia</string>
+    <string name="battery_level">Bateria: %d%%</string>
+    <string name="wifi_status">WiFi: %s</string>
+    <string name="storage_available">Dostępne: %s</string>
+    <string name="accessibility_status">Accessibility: %s</string>
+    <string name="enabled">Włączone</string>
+    <string name="disabled">Wyłączone</string>
+    
+    <!-- Enhanced Logging -->
+    <string name="detailed_app_info">Szczegóły aplikacji</string>
+    <string name="app_category">Kategoria: %s</string>
+    <string name="app_usage_time">Czas użytkowania: %s</string>
+    <string name="app_last_used">Ostatnio użyte: %s</string>
+    <string name="real_time_monitoring">Monitorowanie w czasie rzeczywistym</string>
+    <string name="monitoring_frequency">Częstotliwość: co %d sekund</string>
+    
     <!-- Errors -->
     <string name="error_generic">Wystąpił błąd. Spróbuj ponownie.</string>
     <string name="error_no_projection">Nie można uzyskać dostępu do ekranu</string>
     <string name="error_no_storage_permission">Brak uprawnień do odczytu plików</string>
     <string name="error_logs_not_accessible">Nie można odczytać plików logów</string>
+    <string name="error_network_unavailable">Brak połączenia sieciowego</string>
+    <string name="error_pairing_timeout">Przekroczono czas parowania</string>
+    <string name="error_device_not_found">Nie znaleziono urządzenia</string>
 </resources>
