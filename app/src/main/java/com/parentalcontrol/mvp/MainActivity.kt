@@ -141,6 +141,11 @@ class MainActivity : AppCompatActivity() {
                 startActivity(Intent(this@MainActivity, IncidentsActivity::class.java))
             }
             
+            // Ustawienia alertów
+            btnAlertSettings.setOnClickListener {
+                startActivity(Intent(this@MainActivity, AlertSettingsActivity::class.java))
+            }
+            
             // Parowanie urządzeń
             btnPairDevice.setOnClickListener {
                 showDeviceTypeSelectionDialog()

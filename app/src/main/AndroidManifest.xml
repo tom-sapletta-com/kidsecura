@@ -109,6 +109,12 @@
             android:label="Historia incydentów"
             android:parentActivityName=".MainActivity" />
 
+        <activity
+            android:name=".AlertSettingsActivity"
+            android:exported="false"
+            android:label="Ustawienia alertów"
+            android:parentActivityName=".MainActivity" />
+
         <service
             android:name=".service.ScreenCaptureService"
             android:enabled="true"
