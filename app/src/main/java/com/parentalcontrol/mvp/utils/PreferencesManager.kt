@@ -2,6 +2,8 @@ package com.parentalcontrol.mvp.utils
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 
 class PreferencesManager(context: Context) {
     
@@ -19,7 +21,10 @@ class PreferencesManager(context: Context) {
         private const val KEY_PARENT_EMAIL = "parent_email"
         private const val KEY_PAIRING_CODE = "pairing_code"
         private const val KEY_DEVICE_PAIRED = "device_paired"
+        private const val KEY_THREAT_KEYWORDS = "threat_keywords"
     }
+    
+    private val gson = Gson()
     
     fun getCaptureInterval(): Int = prefs.getInt(KEY_CAPTURE_INTERVAL, 2)
     fun setCaptureInterval(interval: Int) = prefs.edit().putInt(KEY_CAPTURE_INTERVAL, interval).apply()

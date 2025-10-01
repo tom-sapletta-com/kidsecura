@@ -17,6 +17,31 @@
     <string name="recent_logs_title">Ostatnie zdarzenia</string>
     <string name="no_logs_yet">Brak zdarzeń do wyświetlenia</string>
     <string name="btn_pair_device">Parowanie</string>
+    <string name="btn_keywords_editor">Słowa kluczowe</string>
+    
+    <!-- Keywords Editor -->
+    <string name="keywords_editor_title">Edytor słów kluczowych</string>
+    <string name="keywords_editor_description">Zarządzaj słowami, które będą wykrywane podczas monitorowania. Dodaj słowa, które mogą wskazywać na zagrożenia.</string>
+    <string name="keyword_count">Słów kluczowych: %d</string>
+    <string name="add_new_keyword">Dodaj nowe słowo</string>
+    <string name="add_keyword_title">Dodaj słowo kluczowe</string>
+    <string name="add_keyword_message">Wprowadź słowo lub frazę do wykrywania:</string>
+    <string name="enter_keyword_hint">np. niebezpieczne, przemoc, ...</string>
+    <string name="keyword_already_exists">To słowo już istnieje na liście</string>
+    <string name="keyword_cannot_be_empty">Słowo nie może być puste</string>
+    <string name="delete_keyword_title">Usuń słowo</string>
+    <string name="delete_keyword_message">Czy na pewno chcesz usunąć słowo \"%s\"?</string>
+    <string name="delete_keyword">Usuń słowo</string>
+    <string name="reset_keywords_title">Resetuj do domyślnych</string>
+    <string name="reset_keywords_message">Czy chcesz przywrócić domyślną listę słów kluczowych? Wszystkie dodane przez Ciebie słowa zostaną usunięte.</string>
+    <string name="reset_to_defaults">Resetuj</string>
+    <string name="save_keywords">Zapisz</string>
+    <string name="keywords_saved_success">Słowa kluczowe zostały zapisane</string>
+    <string name="keywords_reset_success">Przywrócono domyślne słowa kluczowe</string>
+    <string name="no_keywords_message">Brak słów kluczowych.\nDodaj pierwsze słowo używając przycisku powyżej.</string>
+    <string name="add">Dodaj</string>
+    <string name="delete">Usuń</string>
+    <string name="reset">Resetuj</string>
     
     <!-- Event History Activity -->
     <string name="history_title">Historia zdarzeń</string>
