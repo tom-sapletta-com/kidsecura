@@ -97,6 +97,18 @@
             android:label="@string/keywords_editor_title"
             android:parentActivityName=".MainActivity" />
 
+        <activity
+            android:name=".PairedDevicesActivity"
+            android:exported="false"
+            android:label="Zarządzanie urządzeniami"
+            android:parentActivityName=".MainActivity" />
+
+        <activity
+            android:name=".IncidentsActivity"
+            android:exported="false"
+            android:label="Historia incydentów"
+            android:parentActivityName=".MainActivity" />
+
         <service
             android:name=".service.ScreenCaptureService"
             android:enabled="true"

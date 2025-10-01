@@ -131,6 +131,16 @@ class MainActivity : AppCompatActivity() {
                 startActivity(Intent(this@MainActivity, KeywordsEditorActivity::class.java))
             }
             
+            // Zarządzanie urządzeniami
+            btnManageDevices.setOnClickListener {
+                startActivity(Intent(this@MainActivity, PairedDevicesActivity::class.java))
+            }
+            
+            // Przeglądanie incydentów
+            btnViewIncidents.setOnClickListener {
+                startActivity(Intent(this@MainActivity, IncidentsActivity::class.java))
+            }
+            
             // Parowanie urządzeń
             btnPairDevice.setOnClickListener {
                 showDeviceTypeSelectionDialog()
