@@ -35,7 +35,7 @@
     <string name="notification_monitoring_title">Monitorowanie aktywne</string>
     <string name="notification_monitoring_text">Aplikacja monitoruje treści na ekranie</string>
     <string name="notification_alert_title">⚠️ Wykryto podejrzaną treść!</string>
-    <string name="notification_alert_text">%s - Pewność: %d%%</string>
+    <string name="notification_alert_text">%1$s - Pewność: %2$d%%</string>
     <string name="notification_channel_monitoring">Monitorowanie ekranu</string>
     <string name="notification_channel_alerts">Alerty bezpieczeństwa</string>
     
