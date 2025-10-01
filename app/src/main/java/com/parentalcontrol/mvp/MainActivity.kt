@@ -62,22 +62,45 @@ class MainActivity : AppCompatActivity() {
     }
     
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        binding = ActivityMainBinding.inflate(layoutInflater)
-        setContentView(binding.root)
-        
-        prefsManager = PreferencesManager(this)
-        mediaProjectionManager = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
-        fileLogger = FileLogger(this)
-        
-        setupUI()
-        checkPermissions()
+        Log.d(TAG, "🚀 MainActivity.onCreate() - START")
+        try {
+            super.onCreate(savedInstanceState)
+            Log.d(TAG, "✅ super.onCreate() completed")
+            
+            binding = ActivityMainBinding.inflate(layoutInflater)
+            Log.d(TAG, "✅ ActivityMainBinding inflated successfully")
+            
+            setContentView(binding.root)
+            Log.d(TAG, "✅ setContentView completed")
+            
+            prefsManager = PreferencesManager(this)
+            Log.d(TAG, "✅ PreferencesManager initialized")
+            
+            mediaProjectionManager = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
+            Log.d(TAG, "✅ MediaProjectionManager initialized")
+            
+            fileLogger = FileLogger(this)
+            Log.d(TAG, "✅ FileLogger initialized")
+            
+            setupUI()
+            Log.d(TAG, "✅ setupUI() completed")
+            
+            checkPermissions()
+            Log.d(TAG, "✅ checkPermissions() completed")
+            
+            Log.d(TAG, "🎉 MainActivity.onCreate() - COMPLETED SUCCESSFULLY")
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ CRITICAL ERROR in MainActivity.onCreate()", e)
+            Toast.makeText(this, "Błąd inicjalizacji: ${e.message}", Toast.LENGTH_LONG).show()
+        }
         updateServiceStatus()
         startLogUpdates()
     }
     
     private fun setupUI() {
-        binding.apply {
+        Log.d(TAG, "🔧 setupUI() - START")
+        try {
+            binding.apply {
             // Przycisk rozpoczęcia/zatrzymania monitorowania
             btnToggleMonitoring.setOnClickListener {
                 if (isServiceRunning) {
@@ -128,38 +151,80 @@ class MainActivity : AppCompatActivity() {
             }
             
             // Edytor słów kluczowych
+            Log.d(TAG, "🔧 Setting up btnKeywordsEditor click listener")
             btnKeywordsEditor.setOnClickListener {
                 try {
-                    Log.d("MainActivity", "🔧 Próba otwarcia KeywordsEditorActivity...")
+                    Log.d(TAG, "🔧 btnKeywordsEditor clicked - Próba otwarcia KeywordsEditorActivity...")
                     val intent = Intent(this@MainActivity, KeywordsEditorActivity::class.java)
-                    Log.d("MainActivity", "✅ Intent utworzony poprawnie")
+                    Log.d(TAG, "✅ Intent utworzony poprawnie")
                     startActivity(intent)
-                    Log.d("MainActivity", "✅ startActivity wywołane poprawnie")
+                    Log.d(TAG, "✅ startActivity wywołane poprawnie")
                 } catch (e: Exception) {
-                    Log.e("MainActivity", "❌ BŁĄD podczas otwierania KeywordsEditorActivity", e)
-                    Toast.makeText(this@MainActivity, "Błąd: ${e.message}", Toast.LENGTH_LONG).show()
+                    Log.e(TAG, "❌ BŁĄD podczas otwierania KeywordsEditorActivity", e)
+                    Toast.makeText(this@MainActivity, "Błąd KeywordsEditor: ${e.message}", Toast.LENGTH_LONG).show()
                 }
             }
             
             // Zarządzanie urządzeniami
+            Log.d(TAG, "🔧 Setting up btnManageDevices click listener")
             btnManageDevices.setOnClickListener {
-                startActivity(Intent(this@MainActivity, PairedDevicesActivity::class.java))
+                try {
+                    Log.d(TAG, "🔧 btnManageDevices clicked - Opening PairedDevicesActivity")
+                    val intent = Intent(this@MainActivity, PairedDevicesActivity::class.java)
+                    startActivity(intent)
+                    Log.d(TAG, "✅ PairedDevicesActivity opened successfully")
+                } catch (e: Exception) {
+                    Log.e(TAG, "❌ BŁĄD podczas otwierania PairedDevicesActivity", e)
+                    Toast.makeText(this@MainActivity, "Błąd Urządzenia: ${e.message}", Toast.LENGTH_LONG).show()
+                }
             }
             
             // Przeglądanie incydentów
+            Log.d(TAG, "🔧 Setting up btnViewIncidents click listener")
             btnViewIncidents.setOnClickListener {
-                startActivity(Intent(this@MainActivity, IncidentsActivity::class.java))
+                try {
+                    Log.d(TAG, "🔧 btnViewIncidents clicked - Opening IncidentsActivity")
+                    val intent = Intent(this@MainActivity, IncidentsActivity::class.java)
+                    startActivity(intent)
+                    Log.d(TAG, "✅ IncidentsActivity opened successfully")
+                } catch (e: Exception) {
+                    Log.e(TAG, "❌ BŁĄD podczas otwierania IncidentsActivity", e)
+                    Toast.makeText(this@MainActivity, "Błąd Historia: ${e.message}", Toast.LENGTH_LONG).show()
+                }
             }
             
             // Ustawienia alertów
+            Log.d(TAG, "🔧 Setting up btnAlertSettings click listener")
             btnAlertSettings.setOnClickListener {
-                startActivity(Intent(this@MainActivity, AlertSettingsActivity::class.java))
+                try {
+                    Log.d(TAG, "🔧 btnAlertSettings clicked - Opening AlertSettingsActivity")
+                    val intent = Intent(this@MainActivity, AlertSettingsActivity::class.java)
+                    startActivity(intent)
+                    Log.d(TAG, "✅ AlertSettingsActivity opened successfully")
+                } catch (e: Exception) {
+                    Log.e(TAG, "❌ BŁĄD podczas otwierania AlertSettingsActivity", e)
+                    Toast.makeText(this@MainActivity, "Błąd Alerty: ${e.message}", Toast.LENGTH_LONG).show()
+                }
             }
             
             // Parowanie urządzeń
+            Log.d(TAG, "🔧 Setting up btnPairDevice click listener")
             btnPairDevice.setOnClickListener {
-                showDeviceTypeSelectionDialog()
+                try {
+                    Log.d(TAG, "🔧 btnPairDevice clicked - Opening device pairing dialog")
+                    showDeviceTypeSelectionDialog()
+                    Log.d(TAG, "✅ Device pairing dialog shown successfully")
+                } catch (e: Exception) {
+                    Log.e(TAG, "❌ BŁĄD podczas otwierania dialog parowania", e)
+                    Toast.makeText(this@MainActivity, "Błąd Parowanie: ${e.message}", Toast.LENGTH_LONG).show()
+                }
             }
+        }
+        
+        Log.d(TAG, "✅ setupUI() - COMPLETED SUCCESSFULLY")
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ CRITICAL ERROR in setupUI()", e)
+            Toast.makeText(this, "Błąd setup UI: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
     
