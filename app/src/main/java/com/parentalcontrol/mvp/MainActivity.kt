@@ -110,6 +110,11 @@ class MainActivity : AppCompatActivity() {
                 startActivity(Intent(this@MainActivity, EventHistoryActivity::class.java))
             }
             
+            // Podgląd logów
+            btnViewLogs.setOnClickListener {
+                startActivity(Intent(this@MainActivity, LogViewerActivity::class.java))
+            }
+            
             // Parowanie (placeholder)
             btnPairDevice.setOnClickListener {
                 Toast.makeText(this@MainActivity, "Funkcja parowania - w przygotowaniu", Toast.LENGTH_SHORT).show()

@@ -80,6 +80,27 @@ dependencies {
     implementation("org.tensorflow:tensorflow-lite:2.14.0")
     implementation("org.tensorflow:tensorflow-lite-support:0.4.4")
     
+    // QR Code generation and scanning
+    implementation("com.journeyapps:zxing-android-embedded:4.3.0")
+    implementation("com.google.zxing:core:3.5.2")
+    
+    // Network communication
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+    
+    // WebSocket for real-time communication
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    
+    // Network service discovery
+    implementation("com.squareup.retrofit2:converter-scalars:2.9.0")
+    
+    // Encryption
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
+    
+    // JSON parsing
+    implementation("com.google.code.gson:gson:2.10.1")
+    
     // Lifecycle
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0")
