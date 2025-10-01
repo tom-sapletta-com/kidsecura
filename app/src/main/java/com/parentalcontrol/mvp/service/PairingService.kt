@@ -329,28 +329,70 @@ class PairingService(private val context: Context) {
                 }
             }
             
-            Log.d(TAG, "HTTP Body: $requestBody")
-            
             // Obsłuż endpointy
+            Log.d(TAG, "🎯 Routing request...")
+            var responseCode = 200
+            var responseMessage = "OK"
+            
             when {
                 path == "/pair" && method == "POST" -> {
-                    handlePairEndpoint(requestBody, writer)
+                    Log.d(TAG, "🤝 Routing to /pair endpoint")
+                    handlePairEndpoint(requestBody, writer, connectionId)
+                    responseCode = 200
+                    responseMessage = "Pairing handled"
                 }
                 path == "/message" && method == "POST" -> {
-                    handleMessageEndpoint(requestBody, writer)
+                    Log.d(TAG, "💬 Routing to /message endpoint")
+                    handleMessageEndpoint(requestBody, writer, connectionId)
+                    responseCode = 200
+                    responseMessage = "Message handled"
+                }
+                path == "/health" && method == "GET" -> {
+                    Log.d(TAG, "🏥 Health check endpoint")
+                    sendHttpResponse(writer, 200, "OK", "{\"status\": \"healthy\", \"service\": \"PairingService\"}")
+                    responseCode = 200
+                    responseMessage = "Health check"
                 }
                 else -> {
-                    sendHttpResponse(writer, 404, "Not Found", "{\"error\": \"Endpoint not found\"}")
+                    Log.w(TAG, "❌ Unknown endpoint: $method $path")
+                    Log.w(TAG, "Available endpoints:")
+                    Log.w(TAG, "  - POST /pair (pairing requests)")
+                    Log.w(TAG, "  - POST /message (messages)")
+                    Log.w(TAG, "  - GET /health (health check)")
+                    sendHttpResponse(writer, 404, "Not Found", "{\"error\": \"Endpoint not found\", \"path\": \"$path\", \"method\": \"$method\"}")
+                    responseCode = 404
+                    responseMessage = "Not Found"
                 }
             }
             
+            val processingTime = System.currentTimeMillis() - startTime
+            Log.d(TAG, "✅ Connection #$connectionId completed:")
+            Log.d(TAG, "  - Processing time: ${processingTime}ms")
+            Log.d(TAG, "  - Response: $responseCode $responseMessage")
+            Log.d(TAG, "=== END HTTP CONNECTION #$connectionId ===")
+            
+        } catch (e: java.net.SocketTimeoutException) {
+            Log.e(TAG, "⏰ Connection #$connectionId timed out after 5 seconds")
+            Log.e(TAG, "Client may have disconnected or is not responding")
+        } catch (e: java.net.SocketException) {
+            Log.e(TAG, "🔌 Connection #$connectionId socket error: ${e.message}")
+            Log.e(TAG, "Possible causes: client disconnected, network issue")
+        } catch (e: java.io.IOException) {
+            Log.e(TAG, "📡 Connection #$connectionId I/O error: ${e.message}")
+            Log.e(TAG, "Data transmission issue")
         } catch (e: Exception) {
-            Log.e(TAG, "Error handling HTTP connection", e)
+            val processingTime = System.currentTimeMillis() - startTime
+            Log.e(TAG, "❌ Unexpected error in connection #$connectionId after ${processingTime}ms")
+            Log.e(TAG, "Error type: ${e::class.simpleName}")
+            Log.e(TAG, "Error message: ${e.message}")
+            Log.e(TAG, "Stack trace:", e)
         } finally {
             try {
+                Log.d(TAG, "🔒 Closing connection #$connectionId socket...")
                 socket.close()
+                Log.d(TAG, "✅ Connection #$connectionId socket closed successfully")
             } catch (e: Exception) {
-                Log.e(TAG, "Error closing HTTP socket", e)
+                Log.e(TAG, "❌ Error closing socket for connection #$connectionId", e)
             }
         }
     }
@@ -358,7 +400,7 @@ class PairingService(private val context: Context) {
     /**
      * Obsługuje endpoint /pair
      */
-    private suspend fun handlePairEndpoint(requestBody: String, writer: PrintWriter) = withContext(Dispatchers.IO) {
+    private suspend fun handlePairEndpoint(requestBody: String, writer: PrintWriter, connectionId: Int) = withContext(Dispatchers.IO) {
         try {
             Log.d(TAG, "Handling /pair endpoint")
             
@@ -401,7 +443,7 @@ class PairingService(private val context: Context) {
     /**
      * Obsługuje endpoint /message
      */
-    private suspend fun handleMessageEndpoint(requestBody: String, writer: PrintWriter) = withContext(Dispatchers.IO) {
+    private suspend fun handleMessageEndpoint(requestBody: String, writer: PrintWriter, connectionId: Int) = withContext(Dispatchers.IO) {
         try {
             Log.d(TAG, "Handling /message endpoint")
             
