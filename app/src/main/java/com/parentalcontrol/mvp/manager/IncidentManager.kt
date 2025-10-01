@@ -7,6 +7,7 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.parentalcontrol.mvp.model.*
 import com.parentalcontrol.mvp.utils.NotificationHelper
+import com.parentalcontrol.mvp.utils.FileLogger
 import kotlinx.coroutines.*
 import java.text.SimpleDateFormat
 import java.util.*
@@ -19,6 +20,9 @@ class IncidentManager(private val context: Context) {
     
     // Lazy initialization PairedDevicesManager
     private val pairedDevicesManager by lazy { PairedDevicesManager(context) }
+    
+    // FileLogger do zapisywania incydentów w logach
+    private val fileLogger by lazy { FileLogger(context) }
     
     companion object {
         private const val TAG = "IncidentManager"
@@ -76,6 +80,21 @@ class IncidentManager(private val context: Context) {
         // Dodaj do cache i storage
         incidentCache[incident.id] = incident
         saveIncidentToStorage(incident)
+        
+        // Zapisz incydent do pliku logów aby był widoczny w MainActivity
+        try {
+            fileLogger.logSuspiciousContent(
+                appName = "Unknown App", // Można by to rozszerzyć w przyszłości
+                packageName = "unknown.package",
+                detectionType = incident.severity.displayName,
+                description = incident.description,
+                confidence = incident.confidence,
+                extractedText = incident.extractedText
+            )
+            Log.d(TAG, "✅ Incident logged to file for MainActivity display")
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error logging incident to file", e)
+        }
         
         // Aktualizuj statystyki słów kluczowych
         updateKeywordFrequency(detectedKeywords, currentTime)

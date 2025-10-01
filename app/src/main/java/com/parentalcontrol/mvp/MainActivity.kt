@@ -307,23 +307,48 @@ class MainActivity : AppCompatActivity() {
     }
     
     /**
-     * Ładuje 3 najnowsze logi z pliku
+     * Ładuje 3 najnowsze logi z pliku używając tej samej lokalizacji co FileLogger
      */
     private suspend fun loadRecentLogs(): List<String> = withContext(Dispatchers.IO) {
         try {
-            val logFile = File(getExternalFilesDir(null), "monitoring_logs.txt")
-            if (!logFile.exists()) {
+            // Używamy tej samej ścieżki co FileLogger: Downloads/KidSecura/
+            val logDir = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS)
+            val kidsecuraDir = File(logDir, "KidSecura")
+            
+            if (!kidsecuraDir.exists()) {
+                Log.d("MainActivity", "Log directory does not exist: ${kidsecuraDir.absolutePath}")
                 return@withContext emptyList()
             }
             
-            val lines = logFile.readLines()
+            // Znajdź najnowszy plik logu (monitoring_log_YYYY-MM-DD.txt)
+            val logFiles = kidsecuraDir.listFiles { file ->
+                file.name.startsWith("monitoring_log_") && file.name.endsWith(".txt")
+            }?.sortedByDescending { it.lastModified() }
+            
+            if (logFiles.isNullOrEmpty()) {
+                Log.d("MainActivity", "No log files found in: ${kidsecuraDir.absolutePath}")
+                return@withContext emptyList()
+            }
+            
+            val mostRecentLogFile = logFiles.first()
+            Log.d("MainActivity", "Reading from log file: ${mostRecentLogFile.absolutePath}")
+            
+            if (!mostRecentLogFile.exists()) {
+                return@withContext emptyList()
+            }
+            
+            val lines = mostRecentLogFile.readLines()
             val recentLogs = lines.takeLast(3).reversed() // 3 najnowsze, od najnowszego
+            
+            Log.d("MainActivity", "Loaded ${recentLogs.size} recent log entries")
             
             // Formatuj logi dla wyświetlenia
             recentLogs.map { line ->
                 formatLogLine(line)
             }
+            
         } catch (e: Exception) {
+            Log.e("MainActivity", "Error loading logs", e)
             emptyList()
         }
     }
