@@ -17,6 +17,9 @@ import java.util.concurrent.ConcurrentHashMap
  */
 class IncidentManager(private val context: Context) {
     
+    // Lazy initialization PairedDevicesManager
+    private val pairedDevicesManager by lazy { PairedDevicesManager(context) }
+    
     companion object {
         private const val TAG = "IncidentManager"
         private const val PREFS_NAME = "incident_manager_prefs"
@@ -183,19 +186,74 @@ class IncidentManager(private val context: Context) {
     /**
      * Wysyła powiadomienie do wszystkich sparowanych rodziców
      */
-    private suspend fun sendNotificationToParents(incident: Incident) = withContext(Dispatchers.Main) {
+    private suspend fun sendNotificationToParents(incident: Incident, forceNotification: Boolean = false) = withContext(Dispatchers.IO) {
         val title = "⚠️ Wykryto ${incident.severity.displayName} incydent!"
         val message = "${incident.deviceName}: ${incident.description}"
         
         // Lokalne powiadomienie
-        notificationHelper.showAlert(
-            title = title,
-            message = message,
-            confidence = (incident.confidence * 100).toInt()
-        )
+        withContext(Dispatchers.Main) {
+            notificationHelper.showAlert(
+                title = title,
+                message = message,
+                confidence = (incident.confidence * 100).toInt()
+            )
+        }
         
-        // TODO: Wysyłaj też do sparowanych urządzeń rodziców przez P2P
-        Log.d(TAG, "Notification sent: $title - $message")
+        // Wysyłaj też do sparowanych urządzeń rodziców przez P2P
+        try {
+            val parentDevices = pairedDevicesManager.getAllPairedDevices()
+                .filter { it.deviceType == DeviceType.PARENT && it.isActive }
+            
+            if (parentDevices.isEmpty()) {
+                Log.d(TAG, "No active parent devices found for notification")
+                return@withContext
+            }
+            
+            Log.d(TAG, "Sending incident notification to ${parentDevices.size} parent devices")
+            
+            // Tworzenie wiadomości powiadomienia o incydencie
+            val incidentNotification = IncidentNotification(
+                incidentId = incident.id,
+                deviceId = incident.deviceId,
+                deviceName = incident.deviceName,
+                timestamp = incident.timestamp,
+                severity = incident.severity,
+                description = incident.description,
+                confidence = incident.confidence,
+                detectedKeywords = incident.detectedKeywords,
+                extractedText = incident.extractedText?.take(200) // Ogranicz do 200 znaków
+            )
+            
+            val notificationMessage = RemoteMessage(
+                senderId = pairedDevicesManager.getCurrentDeviceId(),
+                recipientId = "", // Będzie ustawione dla każdego urządzenia
+                messageType = MessageType.INCIDENT_ALERT,
+                payload = gson.toJson(incidentNotification),
+                requiresAck = true
+            )
+            
+            // Wysyłanie do wszystkich aktywnych urządzeń rodziców
+            parentDevices.forEach { parentDevice ->
+                try {
+                    val deviceMessage = notificationMessage.copy(recipientId = parentDevice.deviceId)
+                    val success = pairedDevicesManager.sendMessageToDevice(parentDevice.deviceId, deviceMessage)
+                    
+                    if (success) {
+                        Log.d(TAG, "Incident notification sent successfully to parent: ${parentDevice.deviceName}")
+                    } else {
+                        Log.w(TAG, "Failed to send incident notification to parent: ${parentDevice.deviceName}")
+                    }
+                    
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error sending incident notification to parent ${parentDevice.deviceName}", e)
+                }
+            }
+            
+            Log.d(TAG, "Incident notification process completed for: ${incident.id}")
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Error in sendNotificationToParents", e)
+        }
     }
     
     /**
@@ -280,6 +338,48 @@ class IncidentManager(private val context: Context) {
         val json = gson.toJson(settings)
         prefs.edit().putString(KEY_ALERT_SETTINGS, json).apply()
         Log.d(TAG, "Alert settings saved")
+    }
+    
+    /**
+     * Aktualizuje ustawienia alertów i zapisuje je
+     */
+    fun updateAlertSettings(settings: AlertSettings) {
+        saveAlertSettings(settings)
+        Log.d(TAG, "Alert settings updated: $settings")
+    }
+    
+    /**
+     * Wysyła testowy alert z podanymi ustawieniami
+     */
+    suspend fun sendTestNotification(testIncident: Incident, settings: AlertSettings) = withContext(Dispatchers.IO) {
+        try {
+            Log.d(TAG, "Sending test notification with incident: ${testIncident.id}")
+            
+            if (!settings.enableNotifications) {
+                Log.w(TAG, "Notifications are disabled in settings")
+                return@withContext
+            }
+            
+            // Dodaj testowy incydent do cache tymczasowo
+            val originalIncident = incidentCache[testIncident.id]
+            incidentCache[testIncident.id] = testIncident
+            
+            // Wymuś wysłanie powiadomienia ignorując częstotliwość dla testów
+            sendNotificationToParents(testIncident, forceNotification = true)
+            
+            // Usuń testowy incydent z cache jeśli wcześniej go nie było
+            if (originalIncident == null) {
+                incidentCache.remove(testIncident.id)
+            } else {
+                incidentCache[testIncident.id] = originalIncident
+            }
+            
+            Log.d(TAG, "Test notification sent successfully")
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Error sending test notification", e)
+            throw e
+        }
     }
     
     private fun generateIncidentId(): String {

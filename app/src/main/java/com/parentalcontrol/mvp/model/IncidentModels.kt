@@ -107,3 +107,18 @@ data class IncidentGroup(
     val latestTimestamp: Long,
     val averageConfidence: Float
 )
+
+/**
+ * Powiadomienie o incydencie wysyłane do urządzeń rodziców przez P2P
+ */
+data class IncidentNotification(
+    val incidentId: String,
+    val deviceId: String,
+    val deviceName: String,
+    val timestamp: Long,
+    val severity: IncidentSeverity,
+    val description: String,
+    val confidence: Float,
+    val detectedKeywords: List<String>,
+    val extractedText: String? = null
+)
