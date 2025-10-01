@@ -65,6 +65,9 @@ class PreferencesManager(context: Context) {
     fun isDevicePaired(): Boolean = prefs.getBoolean(KEY_DEVICE_PAIRED, false)
     fun setDevicePaired(paired: Boolean) = prefs.edit().putBoolean(KEY_DEVICE_PAIRED, paired).apply()
     
+    fun isWizardCompleted(): Boolean = prefs.getBoolean("wizard_completed", false)
+    fun setWizardCompleted(completed: Boolean) = prefs.edit().putBoolean("wizard_completed", completed).apply()
+    
     /**
      * Pobiera listę słów kluczowych z preferencji
      */
