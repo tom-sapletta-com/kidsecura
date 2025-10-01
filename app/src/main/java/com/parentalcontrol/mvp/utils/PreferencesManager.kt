@@ -28,6 +28,15 @@ class PreferencesManager(context: Context) {
         private const val KEY_STEALTH_ACCESS_PIN = "stealth_access_pin"
         private const val KEY_STEALTH_DISGUISE_MODE = "stealth_disguise_mode"
         private const val KEY_STEALTH_LAST_ACCESS = "stealth_last_access"
+        
+        // Messaging Integration keys
+        private const val KEY_TELEGRAM_ENABLED = "telegram_enabled"
+        private const val KEY_TELEGRAM_BOT_TOKEN = "telegram_bot_token"
+        private const val KEY_TELEGRAM_CHAT_IDS = "telegram_chat_ids"
+        private const val KEY_WHATSAPP_ENABLED = "whatsapp_enabled"
+        private const val KEY_WHATSAPP_ACCESS_TOKEN = "whatsapp_access_token"
+        private const val KEY_WHATSAPP_PHONE_NUMBERS = "whatsapp_phone_numbers"
+        private const val KEY_MESSAGE_PRIORITY_THRESHOLD = "message_priority_threshold"
     }
     
     private val gson = Gson()
@@ -123,4 +132,30 @@ class PreferencesManager(context: Context) {
     
     fun getStealthLastAccess(): Long = prefs.getLong(KEY_STEALTH_LAST_ACCESS, 0L)
     fun setStealthLastAccess(timestamp: Long) = prefs.edit().putLong(KEY_STEALTH_LAST_ACCESS, timestamp).apply()
+    
+    // ===== MESSAGING INTEGRATION METHODS =====
+    
+    // Telegram settings
+    fun isTelegramEnabled(): Boolean = prefs.getBoolean(KEY_TELEGRAM_ENABLED, false)
+    fun setTelegramEnabled(enabled: Boolean) = prefs.edit().putBoolean(KEY_TELEGRAM_ENABLED, enabled).apply()
+    
+    fun getTelegramBotToken(): String? = prefs.getString(KEY_TELEGRAM_BOT_TOKEN, null)
+    fun setTelegramBotToken(token: String?) = prefs.edit().putString(KEY_TELEGRAM_BOT_TOKEN, token).apply()
+    
+    fun getTelegramChatIds(): String? = prefs.getString(KEY_TELEGRAM_CHAT_IDS, null)
+    fun setTelegramChatIds(chatIds: String) = prefs.edit().putString(KEY_TELEGRAM_CHAT_IDS, chatIds).apply()
+    
+    // WhatsApp settings
+    fun isWhatsAppEnabled(): Boolean = prefs.getBoolean(KEY_WHATSAPP_ENABLED, false)
+    fun setWhatsAppEnabled(enabled: Boolean) = prefs.edit().putBoolean(KEY_WHATSAPP_ENABLED, enabled).apply()
+    
+    fun getWhatsAppAccessToken(): String? = prefs.getString(KEY_WHATSAPP_ACCESS_TOKEN, null)
+    fun setWhatsAppAccessToken(token: String?) = prefs.edit().putString(KEY_WHATSAPP_ACCESS_TOKEN, token).apply()
+    
+    fun getWhatsAppPhoneNumbers(): String? = prefs.getString(KEY_WHATSAPP_PHONE_NUMBERS, null)
+    fun setWhatsAppPhoneNumbers(phoneNumbers: String) = prefs.edit().putString(KEY_WHATSAPP_PHONE_NUMBERS, phoneNumbers).apply()
+    
+    // Message priority threshold
+    fun getMessagePriorityThreshold(): Int = prefs.getInt(KEY_MESSAGE_PRIORITY_THRESHOLD, 2) // Default to MEDIUM priority
+    fun setMessagePriorityThreshold(threshold: Int) = prefs.edit().putInt(KEY_MESSAGE_PRIORITY_THRESHOLD, threshold).apply()
 }

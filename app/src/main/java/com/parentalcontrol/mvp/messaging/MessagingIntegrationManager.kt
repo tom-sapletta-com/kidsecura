@@ -99,7 +99,7 @@ class MessagingIntegrationManager(
         
         try {
             // Check if priority meets threshold (unless forced)
-            val priorityThreshold = preferencesManager.prefs.getInt(PREF_MESSAGE_PRIORITY_THRESHOLD, PRIORITY_MEDIUM)
+            val priorityThreshold = preferencesManager.getMessagePriorityThreshold()
             if (!forceDelivery && priority < priorityThreshold) {
                 systemLogger.d(TAG, "⏸️ Alert priority ($priority) below threshold ($priorityThreshold), skipping")
                 return false
@@ -182,7 +182,7 @@ class MessagingIntegrationManager(
      */
     private suspend fun sendTelegramMessage(message: String): Boolean {
         return try {
-            val botToken = preferencesManager.getString(PREF_TELEGRAM_BOT_TOKEN, "") ?: ""
+            val botToken = preferencesManager.getTelegramBotToken() ?: ""
             val chatIds = getTelegramChatIds()
             
             if (botToken.isEmpty() || chatIds.isEmpty()) {
@@ -259,7 +259,7 @@ class MessagingIntegrationManager(
             // This would require Facebook Business verification and setup
             systemLogger.d(TAG, "📱 WhatsApp integration - placeholder implementation")
             
-            val accessToken = preferencesManager.getString(PREF_WHATSAPP_ACCESS_TOKEN, "") ?: ""
+            val accessToken = preferencesManager.getWhatsAppAccessToken() ?: ""
             val phoneNumbers = getWhatsAppPhoneNumbers()
             
             if (accessToken.isEmpty() || phoneNumbers.isEmpty()) {
@@ -364,40 +364,40 @@ class MessagingIntegrationManager(
     
     // Configuration methods
     fun enableTelegram(botToken: String, chatIds: List<String>) {
-        preferencesManager.putBoolean(PREF_TELEGRAM_ENABLED, true)
-        preferencesManager.putString(PREF_TELEGRAM_BOT_TOKEN, botToken)
-        preferencesManager.putString(PREF_TELEGRAM_CHAT_IDS, gson.toJson(chatIds))
+        preferencesManager.setTelegramEnabled(true)
+        preferencesManager.setTelegramBotToken(botToken)
+        preferencesManager.setTelegramChatIds(gson.toJson(chatIds))
         systemLogger.d(TAG, "✅ Telegram enabled with ${chatIds.size} chat(s)")
     }
     
     fun enableWhatsApp(accessToken: String, phoneNumbers: List<String>) {
-        preferencesManager.putBoolean(PREF_WHATSAPP_ENABLED, true)
-        preferencesManager.putString(PREF_WHATSAPP_ACCESS_TOKEN, accessToken)
-        preferencesManager.putString(PREF_WHATSAPP_PHONE_NUMBERS, gson.toJson(phoneNumbers))
+        preferencesManager.setWhatsAppEnabled(true)
+        preferencesManager.setWhatsAppAccessToken(accessToken)
+        preferencesManager.setWhatsAppPhoneNumbers(gson.toJson(phoneNumbers))
         systemLogger.d(TAG, "✅ WhatsApp enabled with ${phoneNumbers.size} number(s)")
     }
     
     fun disableTelegram() {
-        preferencesManager.putBoolean(PREF_TELEGRAM_ENABLED, false)
+        preferencesManager.setTelegramEnabled(false)
         systemLogger.d(TAG, "❌ Telegram disabled")
     }
     
     fun disableWhatsApp() {
-        preferencesManager.putBoolean(PREF_WHATSAPP_ENABLED, false)
+        preferencesManager.setWhatsAppEnabled(false)
         systemLogger.d(TAG, "❌ WhatsApp disabled")
     }
     
     fun setPriorityThreshold(threshold: Int) {
-        preferencesManager.putInt(PREF_MESSAGE_PRIORITY_THRESHOLD, threshold)
+        preferencesManager.setMessagePriorityThreshold(threshold)
         systemLogger.d(TAG, "⚙️ Priority threshold set to: $threshold")
     }
     
     // Helper methods
-    private fun isTelegramEnabled(): Boolean = preferencesManager.getBoolean(PREF_TELEGRAM_ENABLED, false)
-    private fun isWhatsAppEnabled(): Boolean = preferencesManager.getBoolean(PREF_WHATSAPP_ENABLED, false)
+    private fun isTelegramEnabled(): Boolean = preferencesManager.isTelegramEnabled()
+    private fun isWhatsAppEnabled(): Boolean = preferencesManager.isWhatsAppEnabled()
     
     private fun getTelegramChatIds(): List<String> {
-        val chatIdsJson = preferencesManager.getString(PREF_TELEGRAM_CHAT_IDS, "[]") ?: "[]"
+        val chatIdsJson = preferencesManager.getTelegramChatIds() ?: "[]"
         return try {
             gson.fromJson(chatIdsJson, Array<String>::class.java).toList()
         } catch (e: Exception) {
@@ -407,7 +407,7 @@ class MessagingIntegrationManager(
     }
     
     private fun getWhatsAppPhoneNumbers(): List<String> {
-        val phoneNumbersJson = preferencesManager.getString(PREF_WHATSAPP_PHONE_NUMBERS, "[]") ?: "[]"
+        val phoneNumbersJson = preferencesManager.getWhatsAppPhoneNumbers() ?: "[]"
         return try {
             gson.fromJson(phoneNumbersJson, Array<String>::class.java).toList()
         } catch (e: Exception) {
