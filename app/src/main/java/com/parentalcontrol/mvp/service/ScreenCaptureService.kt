@@ -24,6 +24,8 @@ import com.parentalcontrol.mvp.data.MonitoringEvent
 import com.parentalcontrol.mvp.data.MonitoringDatabase
 import com.parentalcontrol.mvp.utils.ImageUtils
 import com.parentalcontrol.mvp.utils.NotificationHelper
+import com.parentalcontrol.mvp.utils.AppMonitor
+import com.parentalcontrol.mvp.utils.FileLogger
 import kotlinx.coroutines.*
 import java.io.File
 import java.io.FileOutputStream
@@ -63,6 +65,8 @@ class ScreenCaptureService : Service() {
     private lateinit var contentAnalyzer: ContentAnalyzer
     private lateinit var database: MonitoringDatabase
     private lateinit var notificationHelper: NotificationHelper
+    private lateinit var appMonitor: AppMonitor
+    private lateinit var fileLogger: FileLogger
     
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     
@@ -75,6 +79,13 @@ class ScreenCaptureService : Service() {
         contentAnalyzer = ContentAnalyzer(this)
         database = MonitoringDatabase.getInstance(this)
         notificationHelper = NotificationHelper(this)
+        appMonitor = AppMonitor(this)
+        fileLogger = FileLogger(this)
+        
+        // Loguj start serwisu
+        serviceScope.launch {
+            fileLogger.logServiceEvent("Service started")
+        }
         
         // Pobierz metryki ekranu
         val metrics = resources.displayMetrics
@@ -107,11 +118,14 @@ class ScreenCaptureService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "Monitorowanie ekranu",
-                NotificationManager.IMPORTANCE_LOW
+                "Monitorowanie",
+                NotificationManager.IMPORTANCE_MIN // Minimalne znaczenie - ukryte powiadomienie
             ).apply {
-                description = "Powiadomienie o aktywnym monitorowaniu ekranu"
+                description = "Monitoring w tle"
                 setSound(null, null)
+                enableVibration(false)
+                setShowBadge(false)
+                importance = NotificationManager.IMPORTANCE_MIN
             }
             
             val manager = getSystemService(NotificationManager::class.java)
@@ -128,11 +142,14 @@ class ScreenCaptureService : Service() {
         )
         
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle(getString(R.string.notification_monitoring_title))
-            .setContentText(getString(R.string.notification_monitoring_text))
+            .setContentTitle("Ochrona")
+            .setContentText("Aktywna")
             .setSmallIcon(R.drawable.ic_monitoring)
             .setContentIntent(pendingIntent)
             .setOngoing(true)
+            .setPriority(NotificationCompat.PRIORITY_MIN)
+            .setVisibility(NotificationCompat.VISIBILITY_SECRET)
+            .setSilent(true)
             .build()
     }
     
@@ -250,8 +267,18 @@ class ScreenCaptureService : Service() {
     private suspend fun analyzeContent(bitmap: Bitmap) {
         withContext(Dispatchers.IO) {
             try {
+                // Pobierz informacje o aktualnej aplikacji
+                val currentApp = appMonitor.getCurrentApp()
+                if (currentApp == null) {
+                    Log.w(TAG, "Cannot determine current app - Usage Stats permission may not be granted")
+                    return@withContext
+                }
+                
                 // Uruchom analizę
                 val analysisResult = contentAnalyzer.analyze(bitmap)
+                
+                // Loguj aktywność aplikacji
+                fileLogger.logAppActivity(currentApp.appName, currentApp.packageName)
                 
                 // Jeśli wykryto podejrzaną treść
                 if (analysisResult.isSuspicious) {
@@ -267,13 +294,17 @@ class ScreenCaptureService : Service() {
                     // Zapisz wydarzenie w bazie
                     database.eventDao().insertEvent(event)
                     
-                    // Wyślij powiadomienie rodzicowi
-                    notificationHelper.sendAlertNotification(
-                        "Wykryto podejrzaną treść",
-                        "${analysisResult.detectionType}: ${analysisResult.description}"
+                    // Loguj do pliku w Downloads
+                    fileLogger.logSuspiciousContent(
+                        appName = currentApp.appName,
+                        packageName = currentApp.packageName,
+                        detectionType = analysisResult.detectionType,
+                        description = analysisResult.description,
+                        confidence = analysisResult.confidence,
+                        extractedText = analysisResult.extractedText
                     )
                     
-                    Log.d(TAG, "Suspicious content detected: ${analysisResult.description}")
+                    Log.d(TAG, "Suspicious content detected in ${currentApp.appName}: ${analysisResult.description}")
                 }
                 Unit // Explicit Unit return to avoid 'if' expression error
             } catch (e: Exception) {
@@ -334,6 +365,13 @@ class ScreenCaptureService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         isRunning = false
+        
+        // Loguj zakończenie serwisu
+        serviceScope.launch {
+            fileLogger.logServiceEvent("Service stopped")
+            fileLogger.cleanOldLogs()
+        }
+        
         cleanup()
         serviceScope.cancel()
         Log.d(TAG, "Service destroyed")
