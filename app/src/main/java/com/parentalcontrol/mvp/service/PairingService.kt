@@ -111,7 +111,7 @@ class PairingService(private val context: Context) {
                     try {
                         val socket = serverSocket?.accept()
                         if (socket != null) {
-                            handleIncomingConnection(socket)
+                            launch { handleHttpConnection(socket) }
                         }
                     } catch (e: Exception) {
                         if (isActive) {
@@ -176,43 +176,325 @@ class PairingService(private val context: Context) {
     }
     
     /**
-     * Łączy się z urządzeniem zdalnym
+     * Obsługuje przychodzące połączenia HTTP
+     */
+    private suspend fun handleHttpConnection(socket: Socket) = withContext(Dispatchers.IO) {
+        try {
+            Log.d(TAG, "HTTP connection from: ${socket.remoteSocketAddress}")
+            
+            val reader = BufferedReader(InputStreamReader(socket.getInputStream()))
+            val writer = PrintWriter(OutputStreamWriter(socket.getOutputStream()), true)
+            
+            // Odczytaj HTTP request
+            val requestLine = reader.readLine() ?: return@withContext
+            Log.d(TAG, "HTTP Request: $requestLine")
+            
+            // Parsuj metodę i path
+            val parts = requestLine.split(" ")
+            if (parts.size < 3) return@withContext
+            
+            val method = parts[0]
+            val path = parts[1]
+            
+            // Odczytaj headers
+            val headers = mutableMapOf<String, String>()
+            var line: String?
+            while (reader.readLine().also { line = it } != null && line!!.isNotEmpty()) {
+                val colonIndex = line!!.indexOf(':')
+                if (colonIndex > 0) {
+                    val key = line!!.substring(0, colonIndex).trim()
+                    val value = line!!.substring(colonIndex + 1).trim()
+                    headers[key.lowercase()] = value
+                }
+            }
+            
+            // Odczytaj body dla POST żądań
+            var requestBody = ""
+            if (method == "POST") {
+                val contentLength = headers["content-length"]?.toIntOrNull() ?: 0
+                if (contentLength > 0) {
+                    val bodyBuffer = CharArray(contentLength)
+                    reader.read(bodyBuffer, 0, contentLength)
+                    requestBody = String(bodyBuffer)
+                }
+            }
+            
+            Log.d(TAG, "HTTP Body: $requestBody")
+            
+            // Obsłuż endpointy
+            when {
+                path == "/pair" && method == "POST" -> {
+                    handlePairEndpoint(requestBody, writer)
+                }
+                path == "/message" && method == "POST" -> {
+                    handleMessageEndpoint(requestBody, writer)
+                }
+                else -> {
+                    sendHttpResponse(writer, 404, "Not Found", "{\"error\": \"Endpoint not found\"}")
+                }
+            }
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Error handling HTTP connection", e)
+        } finally {
+            try {
+                socket.close()
+            } catch (e: Exception) {
+                Log.e(TAG, "Error closing HTTP socket", e)
+            }
+        }
+    }
+    
+    /**
+     * Obsługuje endpoint /pair
+     */
+    private suspend fun handlePairEndpoint(requestBody: String, writer: PrintWriter) = withContext(Dispatchers.IO) {
+        try {
+            Log.d(TAG, "Handling /pair endpoint")
+            
+            // Parsuj żądanie parowania
+            val pairingRequest = gson.fromJson(requestBody, RemoteMessage::class.java)
+            val remotePairingData = gson.fromJson(pairingRequest.payload, PairingData::class.java)
+            
+            Log.d(TAG, "Pairing request from device: ${remotePairingData.deviceName} (${remotePairingData.deviceType})")
+            
+            // Sprawdź czy parowanie jest dozwolone
+            val isAllowed = validatePairingRequest(remotePairingData)
+            
+            val response = RemoteMessage(
+                senderId = getCurrentDeviceId(),
+                recipientId = pairingRequest.senderId,
+                messageType = MessageType.PAIRING_RESPONSE,
+                payload = if (isAllowed) "ACCEPTED" else "REJECTED"
+            )
+            
+            if (isAllowed) {
+                // Zapisz dane parowania
+                currentPairingData = remotePairingData
+                savePairingData(remotePairingData)
+                updatePairingStatus(true, remotePairingData)
+                startHeartbeat()
+                
+                Log.d(TAG, "Pairing accepted from ${remotePairingData.deviceName}")
+            } else {
+                Log.d(TAG, "Pairing rejected from ${remotePairingData.deviceName}")
+            }
+            
+            sendHttpResponse(writer, 200, "OK", gson.toJson(response))
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Error handling /pair endpoint", e)
+            sendHttpResponse(writer, 500, "Internal Server Error", "{\"error\": \"Failed to process pairing request\"}")
+        }
+    }
+    
+    /**
+     * Obsługuje endpoint /message
+     */
+    private suspend fun handleMessageEndpoint(requestBody: String, writer: PrintWriter) = withContext(Dispatchers.IO) {
+        try {
+            Log.d(TAG, "Handling /message endpoint")
+            
+            // Parsuj wiadomość
+            val remoteMessage = gson.fromJson(requestBody, RemoteMessage::class.java)
+            
+            when (remoteMessage.messageType) {
+                MessageType.HEARTBEAT -> {
+                    Log.d(TAG, "Received heartbeat from: ${remoteMessage.senderId}")
+                    
+                    // Zaktualizuj status połączenia
+                    pairingStatus = pairingStatus.copy(
+                        connectionStatus = ConnectionStatus.CONNECTED,
+                        lastHeartbeat = System.currentTimeMillis()
+                    )
+                    savePairingStatus()
+                    
+                    // Odpowiedz na heartbeat
+                    val response = RemoteMessage(
+                        senderId = getCurrentDeviceId(),
+                        recipientId = remoteMessage.senderId,
+                        messageType = MessageType.ACKNOWLEDGMENT,
+                        payload = "HEARTBEAT_ACK"
+                    )
+                    
+                    sendHttpResponse(writer, 200, "OK", gson.toJson(response))
+                }
+                MessageType.LOG_DATA -> {
+                    Log.d(TAG, "Received log data from: ${remoteMessage.senderId}")
+                    
+                    val logData = gson.fromJson(remoteMessage.payload, RemoteLogData::class.java)
+                    processRemoteLogData(logData)
+                    
+                    sendHttpResponse(writer, 200, "OK", "{\"status\": \"received\"}")
+                }
+                else -> {
+                    Log.d(TAG, "Unhandled message type: ${remoteMessage.messageType}")
+                    sendHttpResponse(writer, 400, "Bad Request", "{\"error\": \"Unhandled message type\"}")
+                }
+            }
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Error handling /message endpoint", e)
+            sendHttpResponse(writer, 500, "Internal Server Error", "{\"error\": \"Failed to process message\"}")
+        }
+    }
+    
+    /**
+     * Wysyła odpowiedź HTTP
+     */
+    private fun sendHttpResponse(writer: PrintWriter, statusCode: Int, statusText: String, body: String) {
+        writer.println("HTTP/1.1 $statusCode $statusText")
+        writer.println("Content-Type: application/json")
+        writer.println("Content-Length: ${body.length}")
+        writer.println("Connection: close")
+        writer.println()
+        writer.println(body)
+        writer.flush()
+        
+        Log.d(TAG, "HTTP Response: $statusCode $statusText")
+    }
+    
+    /**
+     * Łączy się z urządzeniem zdalnym - z szczegółowym debugowaniem
      */
     private suspend fun connectToRemoteDevice(pairingData: PairingData): Boolean = withContext(Dispatchers.IO) {
         try {
             val url = "http://${pairingData.ipAddress}:${pairingData.port}/pair"
+            Log.d(TAG, "=== ROZPOCZYNAM POŁĄCZENIE P2P ===")
+            Log.d(TAG, "Target URL: $url")
+            Log.d(TAG, "Target Device: ${pairingData.deviceName} (${pairingData.deviceType})")
+            Log.d(TAG, "Target IP: ${pairingData.ipAddress}:${pairingData.port}")
+            
+            // Sprawdź dostępność sieci
+            val isReachable = isHostReachable(pairingData.ipAddress, pairingData.port)
+            Log.d(TAG, "Host reachability test: $isReachable")
+            
+            if (!isReachable) {
+                Log.e(TAG, "❌ Host ${pairingData.ipAddress}:${pairingData.port} is NOT reachable!")
+                Log.e(TAG, "Possible issues:")
+                Log.e(TAG, "- Target device is not on the same network")
+                Log.e(TAG, "- Target device firewall blocking port ${pairingData.port}")
+                Log.e(TAG, "- Target device PairingService not running")
+                Log.e(TAG, "- Wrong IP address in QR code")
+                return@withContext false
+            }
+            
+            // Stwórz dane bieżącego urządzenia
+            val currentDeviceData = createCurrentDevicePairingData()
+            Log.d(TAG, "Current device data:")
+            Log.d(TAG, "  - Name: ${currentDeviceData.deviceName}")
+            Log.d(TAG, "  - Type: ${currentDeviceData.deviceType}")
+            Log.d(TAG, "  - IP: ${currentDeviceData.ipAddress}")
+            Log.d(TAG, "  - ID: ${currentDeviceData.deviceId}")
             
             // Stwórz żądanie parowania
             val pairingRequest = RemoteMessage(
                 senderId = getCurrentDeviceId(),
                 recipientId = pairingData.deviceId,
                 messageType = MessageType.PAIRING_REQUEST,
-                payload = gson.toJson(createCurrentDevicePairingData()),
+                payload = gson.toJson(currentDeviceData),
                 requiresAck = true
             )
             
             val requestBody = gson.toJson(pairingRequest)
                 .toRequestBody("application/json".toMediaType())
+                
+            Log.d(TAG, "Request body size: ${requestBody.contentLength()} bytes")
+            Log.d(TAG, "Sending pairing request...")
             
             val request = Request.Builder()
                 .url(url)
                 .post(requestBody)
+                .addHeader("Content-Type", "application/json")
+                .addHeader("User-Agent", "KidSecura-Pairing/1.0")
                 .build()
             
+            Log.d(TAG, "Making HTTP call to: $url")
             val response = okHttpClient.newCall(request).execute()
+            
+            Log.d(TAG, "Response received:")
+            Log.d(TAG, "  - Status: ${response.code}")
+            Log.d(TAG, "  - Message: ${response.message}")
+            Log.d(TAG, "  - Headers: ${response.headers}")
             
             if (response.isSuccessful) {
                 val responseBody = response.body?.string()
+                Log.d(TAG, "  - Body: $responseBody")
+                
                 if (responseBody != null) {
-                    val responseMessage = gson.fromJson(responseBody, RemoteMessage::class.java)
-                    return@withContext responseMessage.messageType == MessageType.PAIRING_RESPONSE
+                    try {
+                        val responseMessage = gson.fromJson(responseBody, RemoteMessage::class.java)
+                        Log.d(TAG, "Parsed response message:")
+                        Log.d(TAG, "  - Type: ${responseMessage.messageType}")
+                        Log.d(TAG, "  - Payload: ${responseMessage.payload}")
+                        Log.d(TAG, "  - Sender: ${responseMessage.senderId}")
+                        
+                        val success = responseMessage.messageType == MessageType.PAIRING_RESPONSE
+                        if (success) {
+                            Log.d(TAG, "✅ PAIRING SUCCESS! Response type matches expected.")
+                            Log.d(TAG, "✅ P2P CONNECTION ESTABLISHED")
+                        } else {
+                            Log.e(TAG, "❌ PAIRING FAILED! Unexpected response type: ${responseMessage.messageType}")
+                        }
+                        return@withContext success
+                        
+                    } catch (e: Exception) {
+                        Log.e(TAG, "❌ Error parsing response JSON: ${e.message}")
+                        Log.e(TAG, "Raw response body: $responseBody")
+                        return@withContext false
+                    }
+                } else {
+                    Log.e(TAG, "❌ Response body is null!")
                 }
+            } else {
+                Log.e(TAG, "❌ HTTP Error: ${response.code} ${response.message}")
+                val errorBody = response.body?.string()
+                Log.e(TAG, "Error response body: $errorBody")
             }
             
+            Log.e(TAG, "❌ CONNECTION FAILED")
             false
             
         } catch (e: Exception) {
-            Log.e(TAG, "Error connecting to remote device", e)
+            Log.e(TAG, "❌ EXCEPTION in connectToRemoteDevice: ${e::class.simpleName}")
+            Log.e(TAG, "Error message: ${e.message}")
+            Log.e(TAG, "Stack trace:", e)
+            
+            // Dodaj szczegóły błędu
+            when (e) {
+                is java.net.ConnectException -> {
+                    Log.e(TAG, "🔗 CONNECTION REFUSED - Target device may not be listening on port")
+                }
+                is java.net.SocketTimeoutException -> {
+                    Log.e(TAG, "⏰ TIMEOUT - Target device not responding within ${CONNECTION_TIMEOUT}ms")
+                }
+                is java.net.UnknownHostException -> {
+                    Log.e(TAG, "🌐 UNKNOWN HOST - Invalid IP address or DNS issue")
+                }
+                is java.net.NoRouteToHostException -> {
+                    Log.e(TAG, "🛣️ NO ROUTE - Network routing issue, check WiFi connection")
+                }
+                else -> {
+                    Log.e(TAG, "❓ OTHER ERROR: ${e.message}")
+                }
+            }
+            false
+        }
+    }
+    
+    /**
+     * Sprawdza czy host jest dostępny na danym porcie
+     */
+    private suspend fun isHostReachable(ipAddress: String, port: Int): Boolean = withContext(Dispatchers.IO) {
+        try {
+            Log.d(TAG, "Testing connectivity to $ipAddress:$port...")
+            val socket = Socket()
+            socket.connect(java.net.InetSocketAddress(ipAddress, port), 3000) // 3 second timeout
+            socket.close()
+            Log.d(TAG, "✅ Connectivity test PASSED")
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Connectivity test FAILED: ${e.message}")
             false
         }
     }
@@ -388,15 +670,102 @@ class PairingService(private val context: Context) {
      * Tworzy dane parowania dla bieżącego urządzenia
      */
     private fun createCurrentDevicePairingData(): PairingData {
-        // TODO: Zaimplementuj tworzenie danych parowania
-        return PairingData(
-            deviceName = "Current Device",
-            deviceType = DeviceType.CHILD, // lub PARENT
-            ipAddress = "192.168.1.100",
-            port = 8080,
-            securityKey = "dummy_key",
-            pairingCode = "123456"
-        )
+        try {
+            // Pobierz nazwę urządzenia
+            val deviceName = android.os.Build.MODEL ?: "Unknown Device"
+            
+            // Pobierz typ urządzenia z preferencji (domyślnie CHILD)
+            val deviceTypeString = prefs.getString("device_type", DeviceType.CHILD.name)
+            val deviceType = try {
+                DeviceType.valueOf(deviceTypeString ?: DeviceType.CHILD.name)
+            } catch (e: Exception) {
+                DeviceType.CHILD
+            }
+            
+            // Pobierz adres IP urządzenia w sieci lokalnej
+            val ipAddress = getLocalIPAddress() ?: "127.0.0.1"
+            
+            // Port serwera
+            val port = 8080
+            
+            // Wygeneruj lub pobierz klucz bezpieczeństwa
+            val securityKey = getOrGenerateSecurityKey()
+            
+            // Wygeneruj lub pobierz kod parowania
+            val pairingCode = getOrGeneratePairingCode()
+            
+            // Uzyskaj ID urządzenia
+            val deviceId = getCurrentDeviceId()
+            
+            Log.d(TAG, "Created pairing data - Device: $deviceName, Type: $deviceType, IP: $ipAddress")
+            
+            return PairingData(
+                deviceId = deviceId,
+                deviceName = deviceName,
+                deviceType = deviceType,
+                ipAddress = ipAddress,
+                port = port,
+                securityKey = securityKey,
+                pairingCode = pairingCode
+            )
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Error creating pairing data", e)
+            // Fallback do podstawowych danych
+            return PairingData(
+                deviceId = getCurrentDeviceId(),
+                deviceName = android.os.Build.MODEL ?: "Unknown Device",
+                deviceType = DeviceType.CHILD,
+                ipAddress = "127.0.0.1",
+                port = 8080,
+                securityKey = "fallback_key",
+                pairingCode = "000000"
+            )
+        }
+    }
+    
+    /**
+     * Pobiera adres IP urządzenia w sieci lokalnej
+     */
+    private fun getLocalIPAddress(): String? {
+        try {
+            val interfaces = java.net.NetworkInterface.getNetworkInterfaces()
+            while (interfaces.hasMoreElements()) {
+                val networkInterface = interfaces.nextElement()
+                val addresses = networkInterface.inetAddresses
+                while (addresses.hasMoreElements()) {
+                    val address = addresses.nextElement()
+                    if (!address.isLoopbackAddress && address is java.net.Inet4Address) {
+                        return address.hostAddress
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error getting local IP address", e)
+        }
+        return null
+    }
+    
+    /**
+     * Pobiera lub generuje klucz bezpieczeństwa
+     */
+    private fun getOrGenerateSecurityKey(): String {
+        return prefs.getString("security_key", null) ?: run {
+            val newKey = java.util.UUID.randomUUID().toString()
+            prefs.edit().putString("security_key", newKey).apply()
+            newKey
+        }
+    }
+    
+    /**
+     * Pobiera lub generuje kod parowania
+     */
+    private fun getOrGeneratePairingCode(): String {
+        return prefs.getString("pairing_code", null) ?: run {
+            val newCode = (100000..999999).random().toString()
+            prefs.edit().putString("pairing_code", newCode).apply()
+            newCode
+        }
     }
     
     /**

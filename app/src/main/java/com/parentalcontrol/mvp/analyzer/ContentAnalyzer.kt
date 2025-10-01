@@ -4,6 +4,8 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.util.Log
 import com.parentalcontrol.mvp.utils.PreferencesManager
+import com.parentalcontrol.mvp.manager.IncidentManager
+import com.parentalcontrol.mvp.manager.PairedDevicesManager
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
@@ -37,6 +39,8 @@ class ContentAnalyzer(private val context: Context) {
     private var interpreter: Interpreter? = null
     private val textRecognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
     private val prefsManager = PreferencesManager(context)
+    private val incidentManager = IncidentManager(context)
+    private val pairedDevicesManager = PairedDevicesManager(context)
     
     // Pobierz słowa kluczowe z preferencji użytkownika
     private fun getThreatKeywords(): List<String> {
