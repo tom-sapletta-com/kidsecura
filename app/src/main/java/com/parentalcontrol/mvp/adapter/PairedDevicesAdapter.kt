@@ -98,6 +98,11 @@ class PairedDevicesAdapter(
                     layoutConnectionIssue.visibility = View.VISIBLE
                     tvConnectionIssue.text = "Łączenie z urządzeniem..."
                 }
+                ConnectionStatus.ERROR -> {
+                    viewConnectionStatus.backgroundTintList = itemView.context.resources.getColorStateList(android.R.color.holo_red_dark, null)
+                    layoutConnectionIssue.visibility = View.VISIBLE
+                    tvConnectionIssue.text = "Błąd połączenia z urządzeniem"
+                }
             }
             
             // Timestamps

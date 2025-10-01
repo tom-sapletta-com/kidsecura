@@ -2,6 +2,7 @@ package com.parentalcontrol.mvp
 
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
@@ -79,7 +80,7 @@ class KeywordsEditorActivity : AppCompatActivity() {
             textSize = 16f
             setTextColor(ContextCompat.getColor(this@KeywordsEditorActivity, android.R.color.darker_gray))
             setPadding(16, 32, 16, 32)
-            textAlignment = TEXT_ALIGNMENT_CENTER
+            textAlignment = View.TEXT_ALIGNMENT_CENTER
         }
         binding.layoutKeywords.addView(emptyView)
     }
