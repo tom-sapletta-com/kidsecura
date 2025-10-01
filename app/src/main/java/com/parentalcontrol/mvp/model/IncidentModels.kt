@@ -30,14 +30,34 @@ enum class IncidentSeverity(val displayName: String, val weight: Float, val colo
  * Ustawienia alertów dla inteligentnego powiadamiania
  */
 data class AlertSettings(
+    // Progi częstotliwości
+    val frequencyThreshold: Int = 5,               // Maksymalna liczba incydentów na godzinę
+    val timeWindowMinutes: Int = 60,               // Okno czasowe w minutach
+    
+    // Wagi incydentów
+    val criticalWeight: Float = 5.0f,              // Waga incydentów krytycznych
+    val highWeight: Float = 3.0f,                  // Waga incydentów wysokiej wagi
+    val minSeverityForAlert: IncidentSeverity = IncidentSeverity.MEDIUM, // Minimalny poziom do alertu
+    
+    // Różnorodność słów kluczowych
+    val diversityThreshold: Int = 3,               // Minimalna liczba różnych słów kluczowych
+    val requireDiversity: Boolean = true,          // Wymagaj różnorodności do wysłania alertu
+    
+    // Ustawienia powiadomień
+    val enableNotifications: Boolean = true,       // Włącz powiadomienia push
+    val enableSounds: Boolean = true,              // Odtwarzaj dźwięk powiadomienia
+    val enableVibration: Boolean = true,           // Wibracje przy alertach
+    val notificationCooldownMinutes: Int = 15,     // Cooldown powiadomień w minutach
+    
+    // Stare właściwości dla kompatybilności wstecznej
     val minSeverityWeight: Float = 0.4f,           // Minimalna waga incydentu do powiadomienia
-    val maxKeywordFrequency: Int = 3,              // Maksymalna częstotliwość słowa w oknie czasowym
-    val frequencyWindowMinutes: Int = 10,          // Okno czasowe dla liczenia częstotliwości (minuty)
-    val minKeywordDiversity: Int = 5,              // Minimalna różnorodność słów dla wysokiego alertu
+    val maxKeywordFrequency: Int = frequencyThreshold, // Maksymalna częstotliwość słowa w oknie czasowym
+    val frequencyWindowMinutes: Int = timeWindowMinutes, // Okno czasowe dla liczenia częstotliwości (minuty)
+    val minKeywordDiversity: Int = diversityThreshold, // Minimalna różnorodność słów dla wysokiego alertu
     val highConfidenceThreshold: Float = 0.8f,     // Próg wysokiej pewności
     val enableSmartFiltering: Boolean = true,       // Włącz inteligentne filtrowanie
-    val parentNotificationEnabled: Boolean = true,  // Powiadomienia dla rodziców
-    val localNotificationEnabled: Boolean = true    // Lokalne powiadomienia
+    val parentNotificationEnabled: Boolean = enableNotifications, // Powiadomienia dla rodziców
+    val localNotificationEnabled: Boolean = enableNotifications  // Lokalne powiadomienia
 ) {
     companion object {
         fun getDefault() = AlertSettings()

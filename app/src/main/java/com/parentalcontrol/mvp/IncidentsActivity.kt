@@ -280,21 +280,25 @@ class IncidentsActivity : AppCompatActivity() {
     private fun applyCurrentFilter() {
         filteredIncidents = allIncidents.filter { incident ->
             // Severity filter
-            if (currentFilter.severityLevels != null && incident.severity !in currentFilter.severityLevels) {
+            val severityLevels = currentFilter.severityLevels
+            if (severityLevels != null && incident.severity !in severityLevels) {
                 return@filter false
             }
             
             // Time range filter
-            if (currentFilter.timeRangeStart != null && incident.timestamp < currentFilter.timeRangeStart) {
+            val timeRangeStart = currentFilter.timeRangeStart
+            if (timeRangeStart != null && incident.timestamp < timeRangeStart) {
                 return@filter false
             }
             
-            if (currentFilter.timeRangeEnd != null && incident.timestamp > currentFilter.timeRangeEnd) {
+            val timeRangeEnd = currentFilter.timeRangeEnd
+            if (timeRangeEnd != null && incident.timestamp > timeRangeEnd) {
                 return@filter false
             }
             
             // Device filter
-            if (currentFilter.deviceIds != null && incident.deviceId !in currentFilter.deviceIds) {
+            val deviceIds = currentFilter.deviceIds
+            if (deviceIds != null && incident.deviceId !in deviceIds) {
                 return@filter false
             }
             

@@ -43,6 +43,10 @@ class NotificationHelper(private val context: Context) {
         }
     }
     
+    fun showAlert(title: String, message: String, confidence: Int) {
+        sendAlertNotification(title, message)
+    }
+    
     fun sendAlertNotification(title: String, message: String) {
         val intent = Intent(context, EventHistoryActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK

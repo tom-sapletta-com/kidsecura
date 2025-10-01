@@ -487,7 +487,7 @@ class PairingService(private val context: Context) {
                     
                     // Wysyłaj ACK jeśli wymagane
                     val response = RemoteMessage(
-                        senderId = getCurrentDeviceId(),
+                        senderId = getDeviceId(),
                         recipientId = remoteMessage.senderId,
                         messageType = MessageType.ACKNOWLEDGMENT,
                         payload = "INCIDENT_ALERT_RECEIVED"
@@ -1070,7 +1070,13 @@ class PairingService(private val context: Context) {
                 
                 val incidentManager = com.parentalcontrol.mvp.manager.IncidentManager(context)
                 withContext(Dispatchers.IO) {
-                    incidentManager.addIncident(localIncident)
+                    incidentManager.addIncident(
+                        deviceId = localIncident.deviceId,
+                        deviceName = localIncident.deviceName,
+                        detectedKeywords = localIncident.detectedKeywords,
+                        description = localIncident.description,
+                        confidence = localIncident.confidence
+                    )
                 }
                 
                 Log.d(TAG, "✅ Incident saved locally for parent review")
