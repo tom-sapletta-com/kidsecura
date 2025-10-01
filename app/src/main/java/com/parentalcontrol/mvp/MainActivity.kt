@@ -1,0 +1,246 @@
+package com.parentalcontrol.mvp
+
+import android.Manifest
+import android.app.Activity
+import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.media.projection.MediaProjectionManager
+import android.net.Uri
+import android.os.Build
+import android.os.Bundle
+import android.provider.Settings
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import com.parentalcontrol.mvp.databinding.ActivityMainBinding
+import com.parentalcontrol.mvp.service.ScreenCaptureService
+import com.parentalcontrol.mvp.utils.PreferencesManager
+
+class MainActivity : AppCompatActivity() {
+    
+    private lateinit var binding: ActivityMainBinding
+    private lateinit var mediaProjectionManager: MediaProjectionManager
+    private lateinit var prefsManager: PreferencesManager
+    
+    private var isServiceRunning = false
+    
+    companion object {
+        const val REQUEST_MEDIA_PROJECTION = 1001
+        const val PERMISSION_REQUEST_CODE = 2001
+    }
+    
+    // Launcher dla rezultatu MediaProjection
+    private val projectionLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val data = result.data
+            if (data != null) {
+                startScreenCaptureService(result.resultCode, data)
+            }
+        } else {
+            Toast.makeText(this, R.string.permission_denied, Toast.LENGTH_SHORT).show()
+            updateUI(false)
+        }
+    }
+    
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+        
+        prefsManager = PreferencesManager(this)
+        mediaProjectionManager = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
+        
+        setupUI()
+        checkPermissions()
+        updateServiceStatus()
+    }
+    
+    private fun setupUI() {
+        binding.apply {
+            // Przycisk rozpoczęcia/zatrzymania monitorowania
+            btnToggleMonitoring.setOnClickListener {
+                if (isServiceRunning) {
+                    stopMonitoring()
+                } else {
+                    showConsentDialog()
+                }
+            }
+            
+            // Konfiguracja interwału
+            seekBarInterval.apply {
+                min = 1
+                max = 10
+                progress = prefsManager.getCaptureInterval()
+                setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
+                    override fun onProgressChanged(seekBar: android.widget.SeekBar?, progress: Int, fromUser: Boolean) {
+                        tvIntervalValue.text = getString(R.string.interval_value, progress)
+                        if (fromUser) {
+                            prefsManager.setCaptureInterval(progress)
+                        }
+                    }
+                    override fun onStartTrackingTouch(seekBar: android.widget.SeekBar?) {}
+                    override fun onStopTrackingTouch(seekBar: android.widget.SeekBar?) {}
+                })
+            }
+            
+            // Przełączniki
+            switchCropBottom.isChecked = prefsManager.isCropBottomEnabled()
+            switchCropBottom.setOnCheckedChangeListener { _, isChecked ->
+                prefsManager.setCropBottomEnabled(isChecked)
+            }
+            
+            switchLocalAnalysis.isChecked = prefsManager.isLocalAnalysisEnabled()
+            switchLocalAnalysis.setOnCheckedChangeListener { _, isChecked ->
+                prefsManager.setLocalAnalysisEnabled(isChecked)
+            }
+            
+            switchSaveScreenshots.isChecked = prefsManager.isSaveScreenshotsEnabled()
+            switchSaveScreenshots.setOnCheckedChangeListener { _, isChecked ->
+                prefsManager.setSaveScreenshotsEnabled(isChecked)
+            }
+            
+            // Historia zdarzeń
+            btnViewHistory.setOnClickListener {
+                startActivity(Intent(this@MainActivity, EventHistoryActivity::class.java))
+            }
+            
+            // Parowanie (placeholder)
+            btnPairDevice.setOnClickListener {
+                Toast.makeText(this@MainActivity, "Funkcja parowania - w przygotowaniu", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+    
+    private fun checkPermissions() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                    PERMISSION_REQUEST_CODE
+                )
+            }
+        }
+        
+        // Sprawdź uprawnienie SYSTEM_ALERT_WINDOW
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (!Settings.canDrawOverlays(this)) {
+                showOverlayPermissionDialog()
+            }
+        }
+    }
+    
+    private fun showOverlayPermissionDialog() {
+        AlertDialog.Builder(this)
+            .setTitle(R.string.permission_rationale_title)
+            .setMessage(R.string.permission_rationale_message)
+            .setPositiveButton(R.string.permission_settings) { _, _ ->
+                val intent = Intent(
+                    Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                    Uri.parse("package:$packageName")
+                )
+                startActivity(intent)
+            }
+            .setNegativeButton(R.string.permission_cancel, null)
+            .show()
+    }
+    
+    private fun showConsentDialog() {
+        AlertDialog.Builder(this)
+            .setTitle(R.string.consent_title)
+            .setMessage(R.string.consent_message)
+            .setPositiveButton(R.string.consent_agree) { _, _ ->
+                requestScreenCapture()
+            }
+            .setNegativeButton(R.string.consent_disagree) { _, _ ->
+                Toast.makeText(this, "Monitorowanie wymaga zgody", Toast.LENGTH_SHORT).show()
+            }
+            .setCancelable(false)
+            .show()
+    }
+    
+    private fun requestScreenCapture() {
+        val captureIntent = mediaProjectionManager.createScreenCaptureIntent()
+        projectionLauncher.launch(captureIntent)
+    }
+    
+    private fun startScreenCaptureService(resultCode: Int, data: Intent) {
+        val serviceIntent = Intent(this, ScreenCaptureService::class.java).apply {
+            putExtra("RESULT_CODE", resultCode)
+            putExtra("DATA", data)
+            putExtra("CAPTURE_INTERVAL", prefsManager.getCaptureInterval())
+            putExtra("CROP_BOTTOM", prefsManager.isCropBottomEnabled())
+            putExtra("LOCAL_ANALYSIS", prefsManager.isLocalAnalysisEnabled())
+            putExtra("SAVE_SCREENSHOTS", prefsManager.isSaveScreenshotsEnabled())
+        }
+        
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(serviceIntent)
+        } else {
+            startService(serviceIntent)
+        }
+        
+        updateUI(true)
+        Toast.makeText(this, R.string.service_started, Toast.LENGTH_SHORT).show()
+    }
+    
+    private fun stopMonitoring() {
+        stopService(Intent(this, ScreenCaptureService::class.java))
+        updateUI(false)
+        Toast.makeText(this, R.string.service_stopped, Toast.LENGTH_SHORT).show()
+    }
+    
+    private fun updateServiceStatus() {
+        isServiceRunning = ScreenCaptureService.isRunning
+        updateUI(isServiceRunning)
+    }
+    
+    private fun updateUI(running: Boolean) {
+        isServiceRunning = running
+        binding.apply {
+            if (running) {
+                tvStatus.text = getString(R.string.status_active)
+                tvStatus.setTextColor(ContextCompat.getColor(this@MainActivity, R.color.status_safe))
+                btnToggleMonitoring.text = getString(R.string.btn_stop_monitoring)
+            } else {
+                tvStatus.text = getString(R.string.status_inactive)
+                tvStatus.setTextColor(ContextCompat.getColor(this@MainActivity, R.color.status_danger))
+                btnToggleMonitoring.text = getString(R.string.btn_start_monitoring)
+            }
+            
+            // Wyłącz ustawienia podczas działania serwisu
+            seekBarInterval.isEnabled = !running
+            switchCropBottom.isEnabled = !running
+            switchLocalAnalysis.isEnabled = !running
+            switchSaveScreenshots.isEnabled = !running
+        }
+    }
+    
+    override fun onResume() {
+        super.onResume()
+        updateServiceStatus()
+    }
+    
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == PERMISSION_REQUEST_CODE) {
+            if (grantResults.isNotEmpty() && grantResults[0] != PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(this, R.string.permission_rationale_message, Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+}

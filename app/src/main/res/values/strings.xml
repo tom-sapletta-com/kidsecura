@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">KidSecura</string>
+    
+    <!-- Main Activity -->
+    <string name="title_main">Ochrona Rodzicielska</string>
+    <string name="status_inactive">Status: Nieaktywne</string>
+    <string name="status_active">Status: Aktywne</string>
+    <string name="btn_start_monitoring">Rozpocznij monitorowanie</string>
+    <string name="btn_stop_monitoring">Zatrzymaj monitorowanie</string>
+    <string name="interval_label">Interwał przechwytywania:</string>
+    <string name="interval_value">%d sekund</string>
+    <string name="settings_label">Ustawienia analizy:</string>
+    <string name="crop_bottom">Analizuj tylko dolną połowę ekranu</string>
+    <string name="local_analysis">Analiza lokalna (bez wysyłania do chmury)</string>
+    <string name="save_screenshots">Zapisuj zrzuty ekranu</string>
+    <string name="btn_view_history">Historia</string>
+    <string name="btn_pair_device">Parowanie</string>
+    
+    <!-- Event History Activity -->
+    <string name="history_title">Historia zdarzeń</string>
+    <string name="filter_all">Wszystkie</string>
+    <string name="filter_unreviewed">Nieprzejrzane</string>
+    <string name="filter_today">Dzisiaj</string>
+    <string name="filter_week">Tydzień</string>
+    <string name="empty_state">Brak zarejestrowanych zdarzeń</string>
+    <string name="event_details_title">Szczegóły zdarzenia</string>
+    <string name="mark_as_reviewed">Oznacz jako przejrzane</string>
+    <string name="mark_as_false_positive">Fałszywy alarm</string>
+    <string name="close">Zamknij</string>
+    <string name="reviewed_toast">Oznaczono jako przejrzane</string>
+    <string name="false_positive_toast">Oznaczono jako fałszywy alarm</string>
+    
+    <!-- Notifications -->
+    <string name="notification_monitoring_title">Monitorowanie aktywne</string>
+    <string name="notification_monitoring_text">Aplikacja monitoruje treści na ekranie</string>
+    <string name="notification_alert_title">⚠️ Wykryto podejrzaną treść!</string>
+    <string name="notification_alert_text">%s - Pewność: %d%%</string>
+    <string name="notification_channel_monitoring">Monitorowanie ekranu</string>
+    <string name="notification_channel_alerts">Alerty bezpieczeństwa</string>
+    
+    <!-- Consent Dialog -->
+    <string name="consent_title">Ważne - Zgoda na monitorowanie</string>
+    <string name="consent_message">Ta aplikacja będzie monitorować aktywność na ekranie tego urządzenia w celach ochrony rodzicielskiej.\n\nFunkcje:\n• Przechwytywanie ekranu co kilka sekund\n• Analiza tekstu (OCR)\n• Wykrywanie potencjalnie szkodliwych treści\n• Powiadomienia o zagrożeniach\n\nDane są przetwarzane lokalnie i szyfrowane.\n\nCzy zgadzasz się na włączenie monitorowania?</string>
+    <string name="consent_agree">Zgadzam się</string>
+    <string name="consent_disagree">Nie zgadzam się</string>
+    
+    <!-- Permissions -->
+    <string name="permission_rationale_title">Wymagane uprawnienia</string>
+    <string name="permission_rationale_message">Aplikacja wymaga następujących uprawnień:\n\n• Przechwytywanie ekranu - do monitorowania treści\n• Powiadomienia - do alertów\n• Dostęp do plików - do zapisywania zrzutów (opcjonalne)\n\nBez tych uprawnień aplikacja nie będzie działać poprawnie.</string>
+    <string name="permission_denied">Odmowa dostępu do ekranu</string>
+    <string name="permission_settings">Przejdź do ustawień</string>
+    <string name="permission_cancel">Anuluj</string>
+    
+    <!-- Service -->
+    <string name="service_started">Monitorowanie rozpoczęte</string>
+    <string name="service_stopped">Monitorowanie zatrzymane</string>
+    
+    <!-- Errors -->
+    <string name="error_generic">Wystąpił błąd. Spróbuj ponownie.</string>
+    <string name="error_no_projection">Nie można uzyskać dostępu do ekranu</string>
+</resources>

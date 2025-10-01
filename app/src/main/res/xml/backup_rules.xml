@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <!-- Exclude SharedPreferences with sensitive data -->
+    <exclude domain="sharedpref" path="monitoring_prefs.xml"/>
+    
+    <!-- Exclude database -->
+    <exclude domain="database" path="monitoring_database"/>
+    
+    <!-- Exclude screenshots -->
+    <exclude domain="file" path="screenshots"/>
+</full-backup-content>
