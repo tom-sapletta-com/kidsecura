@@ -10,6 +10,7 @@ import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.*
 import org.tensorflow.lite.Interpreter
 import java.io.FileInputStream
 import java.nio.ByteBuffer
@@ -315,7 +316,7 @@ class ContentAnalyzer(private val context: Context) {
             else -> "Bezpieczna treść"
         }
         
-        return AnalysisResult(
+        val result = AnalysisResult(
             isSuspicious = isSuspicious,
             confidence = combinedScore,
             detectionType = detectionType,
@@ -324,6 +325,53 @@ class ContentAnalyzer(private val context: Context) {
             violenceScore = visualResult.score,
             inappropriateContentScore = textResult.score
         )
+        
+        // Jeśli wykryto zagrożenie, stwórz incydent automatycznie
+        if (isSuspicious && combinedScore >= 0.3f) {
+            CoroutineScope(Dispatchers.Default).launch {
+                createIncidentFromAnalysis(result, textResult.keywords)
+            }
+        }
+        
+        return result
+    }
+    
+    /**
+     * Tworzy incydent na podstawie wyników analizy
+     */
+    private suspend fun createIncidentFromAnalysis(result: AnalysisResult, detectedKeywords: List<String>) {
+        try {
+            val currentDeviceId = android.provider.Settings.Secure.getString(
+                context.contentResolver, 
+                android.provider.Settings.Secure.ANDROID_ID
+            )
+            val deviceName = android.os.Build.MODEL ?: "Unknown Device"
+            
+            Log.d(TAG, "Creating incident from analysis:")
+            Log.d(TAG, "  - Detection type: ${result.detectionType}")
+            Log.d(TAG, "  - Confidence: ${result.confidence}")
+            Log.d(TAG, "  - Keywords: ${detectedKeywords.joinToString(", ")}")
+            
+            val incident = incidentManager.addIncident(
+                deviceId = currentDeviceId,
+                deviceName = deviceName,
+                detectedKeywords = detectedKeywords,
+                description = result.description,
+                confidence = result.confidence,
+                extractedText = result.extractedText
+            )
+            
+            Log.d(TAG, "Incident created successfully: ${incident.id}")
+            
+            // Jeśli to wysokie zagrożenie, wysyłaj do rodziców
+            if (result.confidence >= 0.7f) {
+                val parentDevices = pairedDevicesManager.getParentDevices()
+                Log.d(TAG, "High-risk incident - notifying ${parentDevices.size} parent devices")
+            }
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Error creating incident from analysis", e)
+        }
     }
     
     fun cleanup() {

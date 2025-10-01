@@ -103,28 +103,90 @@ class PairingService(private val context: Context) {
      */
     private suspend fun startServer() = withContext(Dispatchers.IO) {
         try {
-            serverSocket?.close()
-            serverSocket = ServerSocket(8080) // Default port
+            Log.d(TAG, "=== STARTING HTTP SERVER ===")
             
-            serverJob = serviceScope.launch {
-                while (isActive && serverSocket?.isClosed == false) {
-                    try {
-                        val socket = serverSocket?.accept()
-                        if (socket != null) {
-                            launch { handleHttpConnection(socket) }
-                        }
-                    } catch (e: Exception) {
-                        if (isActive) {
-                            Log.e(TAG, "Error accepting connection", e)
-                        }
-                    }
+            // Zamknij poprzedni serwer jeśli istnieje
+            serverSocket?.let { socket ->
+                if (!socket.isClosed) {
+                    Log.d(TAG, "Closing previous server socket")
+                    socket.close()
                 }
             }
             
-            Log.d(TAG, "Server started on port 8080")
+            // Sprawdź dostępność portu
+            val port = 8080
+            Log.d(TAG, "Attempting to bind to port: $port")
+            
+            try {
+                serverSocket = ServerSocket(port)
+                Log.d(TAG, "✅ Successfully bound to port $port")
+                Log.d(TAG, "Server socket info:")
+                Log.d(TAG, "  - Local address: ${serverSocket?.localSocketAddress}")
+                Log.d(TAG, "  - Local port: ${serverSocket?.localPort}")
+                Log.d(TAG, "  - SO_TIMEOUT: ${serverSocket?.soTimeout}")
+                Log.d(TAG, "  - Reuse address: ${serverSocket?.reuseAddress}")
+            } catch (e: java.net.BindException) {
+                Log.e(TAG, "❌ Port $port is already in use!")
+                Log.e(TAG, "Possible causes:")
+                Log.e(TAG, "- Another instance of PairingService is running")
+                Log.e(TAG, "- Another app is using port $port")
+                Log.e(TAG, "- Previous server socket not properly closed")
+                throw e
+            }
+            
+            serverJob = serviceScope.launch {
+                Log.d(TAG, "🚀 HTTP Server accept loop started")
+                var connectionCount = 0
+                
+                while (isActive && serverSocket?.isClosed == false) {
+                    try {
+                        Log.d(TAG, "⏳ Waiting for incoming connections...")
+                        val socket = serverSocket?.accept()
+                        
+                        if (socket != null) {
+                            connectionCount++
+                            Log.d(TAG, "📞 New connection #$connectionCount accepted from: ${socket.remoteSocketAddress}")
+                            Log.d(TAG, "Connection details:")
+                            Log.d(TAG, "  - Remote IP: ${socket.inetAddress.hostAddress}")
+                            Log.d(TAG, "  - Remote port: ${socket.port}")
+                            Log.d(TAG, "  - Local port: ${socket.localPort}")
+                            Log.d(TAG, "  - Keep alive: ${socket.keepAlive}")
+                            Log.d(TAG, "  - TCP no delay: ${socket.tcpNoDelay}")
+                            
+                            // Obsługuj połączenie w osobnej coroutine
+                            launch { 
+                                Log.d(TAG, "🔄 Launching handler for connection #$connectionCount")
+                                handleHttpConnection(socket, connectionCount)
+                            }
+                        }
+                    } catch (e: java.net.SocketException) {
+                        if (isActive && serverSocket?.isClosed == false) {
+                            Log.e(TAG, "❌ Socket error in accept loop", e)
+                        } else {
+                            Log.d(TAG, "Server socket closed - stopping accept loop")
+                        }
+                        break
+                    } catch (e: Exception) {
+                        if (isActive) {
+                            Log.e(TAG, "❌ Unexpected error accepting connection", e)
+                            Log.e(TAG, "Error type: ${e::class.simpleName}")
+                            Log.e(TAG, "Error message: ${e.message}")
+                        }
+                    }
+                }
+                
+                Log.d(TAG, "🛑 HTTP Server accept loop ended (handled $connectionCount connections)")
+            }
+            
+            Log.d(TAG, "✅ HTTP SERVER STARTED SUCCESSFULLY")
+            Log.d(TAG, "Listening on: 0.0.0.0:$port")
+            Log.d(TAG, "Ready to accept pairing connections...")
             
         } catch (e: Exception) {
-            Log.e(TAG, "Error starting server", e)
+            Log.e(TAG, "❌ CRITICAL ERROR STARTING SERVER")
+            Log.e(TAG, "Error type: ${e::class.simpleName}")
+            Log.e(TAG, "Error message: ${e.message}")
+            Log.e(TAG, "Stack trace:", e)
             throw e
         }
     }
@@ -178,44 +240,92 @@ class PairingService(private val context: Context) {
     /**
      * Obsługuje przychodzące połączenia HTTP
      */
-    private suspend fun handleHttpConnection(socket: Socket) = withContext(Dispatchers.IO) {
+    private suspend fun handleHttpConnection(socket: Socket, connectionId: Int) = withContext(Dispatchers.IO) {
+        val startTime = System.currentTimeMillis()
         try {
-            Log.d(TAG, "HTTP connection from: ${socket.remoteSocketAddress}")
+            Log.d(TAG, "=== HANDLING HTTP CONNECTION #$connectionId ===")
+            Log.d(TAG, "Connection from: ${socket.remoteSocketAddress}")
+            Log.d(TAG, "Connection established at: ${java.text.SimpleDateFormat("HH:mm:ss.SSS", java.util.Locale.getDefault()).format(java.util.Date())}")
             
             val reader = BufferedReader(InputStreamReader(socket.getInputStream()))
             val writer = PrintWriter(OutputStreamWriter(socket.getOutputStream()), true)
             
-            // Odczytaj HTTP request
-            val requestLine = reader.readLine() ?: return@withContext
-            Log.d(TAG, "HTTP Request: $requestLine")
+            Log.d(TAG, "📖 Reading HTTP request...")
+            
+            // Odczytaj HTTP request z timeoutem
+            socket.soTimeout = 5000 // 5 sekund timeout
+            val requestLine = reader.readLine()
+            
+            if (requestLine == null) {
+                Log.e(TAG, "❌ Connection #$connectionId: Request line is null - client disconnected?")
+                return@withContext
+            }
+            
+            Log.d(TAG, "📨 HTTP Request Line: '$requestLine'")
             
             // Parsuj metodę i path
             val parts = requestLine.split(" ")
-            if (parts.size < 3) return@withContext
+            if (parts.size < 3) {
+                Log.e(TAG, "❌ Connection #$connectionId: Invalid HTTP request format")
+                Log.e(TAG, "Expected: 'METHOD PATH VERSION', got: '$requestLine'")
+                return@withContext
+            }
             
             val method = parts[0]
-            val path = parts[1]
+            val path = parts[1] 
+            val httpVersion = parts[2]
+            
+            Log.d(TAG, "🔍 Parsed request:")
+            Log.d(TAG, "  - Method: $method")
+            Log.d(TAG, "  - Path: $path")
+            Log.d(TAG, "  - HTTP Version: $httpVersion")
             
             // Odczytaj headers
+            Log.d(TAG, "📋 Reading headers...")
             val headers = mutableMapOf<String, String>()
+            var headerCount = 0
             var line: String?
+            
             while (reader.readLine().also { line = it } != null && line!!.isNotEmpty()) {
+                headerCount++
                 val colonIndex = line!!.indexOf(':')
                 if (colonIndex > 0) {
                     val key = line!!.substring(0, colonIndex).trim()
                     val value = line!!.substring(colonIndex + 1).trim()
                     headers[key.lowercase()] = value
+                    Log.d(TAG, "  Header #$headerCount: '$key' = '$value'")
+                } else {
+                    Log.w(TAG, "  Malformed header #$headerCount: '$line'")
                 }
             }
+            
+            Log.d(TAG, "📋 Total headers received: $headerCount")
             
             // Odczytaj body dla POST żądań
             var requestBody = ""
             if (method == "POST") {
                 val contentLength = headers["content-length"]?.toIntOrNull() ?: 0
+                Log.d(TAG, "📦 POST request - Content-Length: $contentLength bytes")
+                
                 if (contentLength > 0) {
-                    val bodyBuffer = CharArray(contentLength)
-                    reader.read(bodyBuffer, 0, contentLength)
-                    requestBody = String(bodyBuffer)
+                    if (contentLength > 10240) { // 10KB limit
+                        Log.w(TAG, "⚠️ Large request body: $contentLength bytes (limit 10KB)")
+                    }
+                    
+                    try {
+                        val bodyBuffer = CharArray(contentLength)
+                        val bytesRead = reader.read(bodyBuffer, 0, contentLength)
+                        requestBody = String(bodyBuffer, 0, bytesRead)
+                        
+                        Log.d(TAG, "📦 Request body read: $bytesRead/$contentLength bytes")
+                        Log.d(TAG, "📦 Body preview: ${requestBody.take(200)}${if (requestBody.length > 200) "..." else ""}")
+                        
+                    } catch (e: Exception) {
+                        Log.e(TAG, "❌ Error reading request body", e)
+                        return@withContext
+                    }
+                } else {
+                    Log.d(TAG, "📦 No request body (Content-Length: 0)")
                 }
             }
             
