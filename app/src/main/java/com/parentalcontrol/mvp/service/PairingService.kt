@@ -1158,105 +1158,8 @@ class PairingService(private val context: Context) {
         }
     }
     
-    /**
-     * Zatrzymuje wszystkie background jobs
-     */
-    private fun stopAllJobs() {
-        Log.d(TAG, "🛑 Stopping all background jobs...")
-        
-        try {
-            heartbeatJob?.let { job ->
-                if (job.isActive) {
-                    Log.d(TAG, "  - Cancelling heartbeat job")
-                    job.cancel()
-                }
-            }
-            
-            serverJob?.let { job ->
-                if (job.isActive) {
-                    Log.d(TAG, "  - Cancelling server job")
-                    job.cancel()
-                }
-            }
-            
-            reconnectionJob?.let { job ->
-                if (job.isActive) {
-                    Log.d(TAG, "  - Cancelling reconnection job")
-                    job.cancel()
-                }
-            }
-            
-            Log.d(TAG, "✅ All background jobs stopped")
-        } catch (e: Exception) {
-            Log.e(TAG, "❌ Error stopping background jobs", e)
-        }
-    }
     
-    /**
-     * Czyści zasoby sieciowe
-     */
-    private fun cleanupNetworkResources() {
-        Log.d(TAG, "🌐 Cleaning up network resources...")
-        
-        try {
-            // Close server socket
-            serverSocket?.let { socket ->
-                if (!socket.isClosed) {
-                    Log.d(TAG, "  - Closing server socket on port ${socket.localPort}")
-                    socket.close()
-                }
-            }
-            
-            // Close client socket
-            clientSocket?.let { socket ->
-                if (!socket.isClosed) {
-                    Log.d(TAG, "  - Closing client socket to ${socket.remoteSocketAddress}")
-                    socket.close()
-                }
-            }
-            
-            // Shutdown OkHttp client connection pool
-            try {
-                okHttpClient.connectionPool.evictAll()
-                Log.d(TAG, "  - Evicted all HTTP connections from pool")
-            } catch (e: Exception) {
-                Log.w(TAG, "  - Warning: Could not evict HTTP connections: ${e.message}")
-            }
-            
-            Log.d(TAG, "✅ Network resources cleaned up")
-        } catch (e: Exception) {
-            Log.e(TAG, "❌ Error cleaning up network resources", e)
-        }
-    }
     
-    /**
-     * Resetuje stan połączenia
-     */
-    private fun resetConnectionState() {
-        Log.d(TAG, "🔄 Resetting connection state...")
-        
-        try {
-            // Reset atomic flags
-            isReconnecting.set(false)
-            isConnectionHealthy.set(false)
-            retryAttempts.set(0)
-            reconnectionAttempts.set(0)
-            
-            // Clear connection data
-            currentPairingData = null
-            serverSocket = null
-            clientSocket = null
-            
-            // Reset jobs references
-            heartbeatJob = null
-            serverJob = null
-            reconnectionJob = null
-            
-            Log.d(TAG, "✅ Connection state reset")
-        } catch (e: Exception) {
-            Log.e(TAG, "❌ Error resetting connection state", e)
-        }
-    }
     
     /**
      * Graceful shutdown z timeout
@@ -1306,6 +1209,186 @@ class PairingService(private val context: Context) {
     }
     
     /**
+     * Circuit breaker - sprawdza czy można wykonać operację
+     */
+    private fun canExecuteOperation(operationName: String): Boolean {
+        if (!isCircuitBreakerOpen.get()) {
+            return true
+        }
+        
+        val timeSinceOpen = System.currentTimeMillis() - circuitBreakerOpenTime
+        if (timeSinceOpen >= CIRCUIT_BREAKER_RECOVERY_TIMEOUT) {
+            Log.d(TAG, "🔄 Circuit breaker recovery timeout reached for '$operationName', attempting to close")
+            return true
+        }
+        
+        Log.w(TAG, "⚡ Circuit breaker OPEN for '$operationName' - operation blocked (${timeSinceOpen}ms since open)")
+        return false
+    }
+    
+    /**
+     * Rejestruje sukces operacji w circuit breaker
+     */
+    private fun recordOperationSuccess(operationName: String) {
+        val successes = circuitBreakerSuccesses.incrementAndGet()
+        
+        if (isCircuitBreakerOpen.get() && successes >= CIRCUIT_BREAKER_SUCCESS_THRESHOLD) {
+            Log.d(TAG, "✅ Circuit breaker CLOSED for '$operationName' after $successes consecutive successes")
+            isCircuitBreakerOpen.set(false)
+            circuitBreakerFailures.set(0)
+            circuitBreakerSuccesses.set(0)
+        }
+    }
+    
+    /**
+     * Rejestruje błąd operacji w circuit breaker
+     */
+    private fun recordOperationFailure(operationName: String, error: String) {
+        val failures = circuitBreakerFailures.incrementAndGet()
+        circuitBreakerSuccesses.set(0) // Reset successes on any failure
+        
+        // Store error for analysis
+        synchronized(lastKnownErrors) {
+            lastKnownErrors.add(Pair(System.currentTimeMillis(), error))
+            // Keep only last 10 errors
+            if (lastKnownErrors.size > 10) {
+                lastKnownErrors.removeAt(0)
+            }
+        }
+        
+        if (failures >= CIRCUIT_BREAKER_FAILURE_THRESHOLD && !isCircuitBreakerOpen.get()) {
+            Log.e(TAG, "⚡ Circuit breaker OPENED for '$operationName' after $failures consecutive failures")
+            isCircuitBreakerOpen.set(true)
+            circuitBreakerOpenTime = System.currentTimeMillis()
+            
+            // Log error pattern analysis
+            analyzeErrorPatterns(operationName)
+        }
+    }
+    
+    /**
+     * Analizuje wzorce błędów dla lepszego recovery
+     */
+    private fun analyzeErrorPatterns(operationName: String) {
+        synchronized(lastKnownErrors) {
+            if (lastKnownErrors.isEmpty()) return
+            
+            Log.w(TAG, "🔍 Analyzing error patterns for '$operationName':")
+            
+            val errorTypes = mutableMapOf<String, Int>()
+            val recentErrors = lastKnownErrors.takeLast(5)
+            
+            recentErrors.forEach { (timestamp, error) ->
+                val errorType = when {
+                    error.contains("timeout", ignoreCase = true) -> "TIMEOUT"
+                    error.contains("connection", ignoreCase = true) -> "CONNECTION"
+                    error.contains("socket", ignoreCase = true) -> "SOCKET"
+                    error.contains("network", ignoreCase = true) -> "NETWORK"
+                    else -> "OTHER"
+                }
+                errorTypes[errorType] = errorTypes.getOrDefault(errorType, 0) + 1
+                
+                val timeAgo = System.currentTimeMillis() - timestamp
+                Log.w(TAG, "  - ${timeAgo}ms ago: [$errorType] $error")
+            }
+            
+            // Suggest recovery action based on error patterns
+            val dominantErrorType = errorTypes.maxByOrNull { it.value }?.key
+            when (dominantErrorType) {
+                "TIMEOUT" -> Log.i(TAG, "💡 Recovery suggestion: Consider increasing timeout values")
+                "CONNECTION" -> Log.i(TAG, "💡 Recovery suggestion: Check network connectivity and restart connection")
+                "SOCKET" -> Log.i(TAG, "💡 Recovery suggestion: Close and recreate sockets")
+                "NETWORK" -> Log.i(TAG, "💡 Recovery suggestion: Check network configuration")
+                else -> Log.i(TAG, "💡 Recovery suggestion: General error recovery needed")
+            }
+        }
+    }
+    
+    /**
+     * Enhanced error recovery based on error type
+     */
+    private suspend fun attemptErrorRecovery(error: Exception, operationName: String): Boolean {
+        Log.d(TAG, "🛠️ Attempting error recovery for '$operationName': ${error.message}")
+        
+        return try {
+            when {
+                error is java.net.SocketTimeoutException -> {
+                    Log.d(TAG, "🔄 Socket timeout recovery: resetting connection")
+                    resetConnectionState()
+                    delay(2000)
+                    true
+                }
+                error is java.net.ConnectException -> {
+                    Log.d(TAG, "🔄 Connection error recovery: checking network and retrying")
+                    cleanupNetworkResources()
+                    delay(3000)
+                    true
+                }
+                error is java.io.IOException -> {
+                    Log.d(TAG, "🔄 IO error recovery: full resource cleanup and reset")
+                    stopAllJobs()
+                    cleanupNetworkResources()
+                    resetConnectionState()
+                    delay(5000)
+                    true
+                }
+                error.message?.contains("failed to connect", ignoreCase = true) == true -> {
+                    Log.d(TAG, "🔄 Connection failure recovery: network diagnostics and reset")
+                    performNetworkDiagnostics()
+                    delay(4000)
+                    true
+                }
+                else -> {
+                    Log.w(TAG, "⚠️ Unknown error type, performing general recovery")
+                    delay(1000)
+                    false
+                }
+            }
+        } catch (recoveryError: Exception) {
+            Log.e(TAG, "❌ Error recovery failed: ${recoveryError.message}")
+            false
+        }
+    }
+    
+    /**
+     * Wykonuje diagnostykę sieci dla lepszego troubleshooting
+     */
+    private suspend fun performNetworkDiagnostics() {
+        Log.d(TAG, "🔍 Performing network diagnostics...")
+        
+        try {
+            // Check if device has network connectivity
+            val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
+            val networkInfo = connectivityManager.activeNetworkInfo
+            
+            if (networkInfo?.isConnected == true) {
+                Log.d(TAG, "✅ Device has active network connection: ${networkInfo.typeName}")
+            } else {
+                Log.w(TAG, "⚠️ Device has no active network connection")
+                return
+            }
+            
+            // Check if current pairing data is still valid
+            currentPairingData?.let { pairingData ->
+                Log.d(TAG, "🔍 Testing connection to paired device: ${pairingData.ipAddress}:${pairingData.port}")
+                
+                try {
+                    // Simple ping test
+                    val testSocket = java.net.Socket()
+                    testSocket.connect(java.net.InetSocketAddress(pairingData.ipAddress, pairingData.port), 3000)
+                    testSocket.close()
+                    Log.d(TAG, "✅ Paired device is reachable")
+                } catch (e: Exception) {
+                    Log.w(TAG, "⚠️ Paired device unreachable: ${e.message}")
+                }
+            }
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Network diagnostics failed: ${e.message}")
+        }
+    }
+    
+    /**
      * Wykonuje operację z retry logic i exponential backoff
      */
     private suspend fun <T> executeWithRetry(
@@ -1313,12 +1396,21 @@ class PairingService(private val context: Context) {
         maxAttempts: Int = MAX_RETRY_ATTEMPTS,
         block: suspend () -> T
     ): T? {
+        // Check circuit breaker before attempting operation
+        if (!canExecuteOperation(operation)) {
+            Log.w(TAG, "⚡ Operation '$operation' blocked by circuit breaker")
+            return null
+        }
+        
         var lastException: Exception? = null
         
         repeat(maxAttempts) { attempt ->
             try {
                 Log.d(TAG, "🔄 Attempt ${attempt + 1}/$maxAttempts for operation: $operation")
                 val result = block()
+                
+                // Record success in circuit breaker
+                recordOperationSuccess(operation)
                 
                 if (attempt > 0) {
                     Log.d(TAG, "✅ Operation '$operation' succeeded on attempt ${attempt + 1}")
@@ -1327,9 +1419,20 @@ class PairingService(private val context: Context) {
                 return result
             } catch (e: Exception) {
                 lastException = e
-                Log.w(TAG, "⚠️ Attempt ${attempt + 1}/$maxAttempts failed for '$operation': ${e.message}")
+                val errorMessage = e.message ?: "Unknown error"
+                
+                // Record failure in circuit breaker
+                recordOperationFailure(operation, errorMessage)
+                
+                Log.w(TAG, "⚠️ Attempt ${attempt + 1}/$maxAttempts failed for '$operation': $errorMessage")
                 
                 if (attempt < maxAttempts - 1) {
+                    // Attempt error recovery before retry
+                    val recoverySuccessful = attemptErrorRecovery(e, operation)
+                    if (recoverySuccessful) {
+                        Log.d(TAG, "🛠️ Error recovery successful for '$operation', continuing with retry")
+                    }
+                    
                     val delayMs = (RETRY_DELAY_BASE * Math.pow(RETRY_DELAY_MULTIPLIER, attempt.toDouble())).toLong()
                     Log.d(TAG, "⏳ Waiting ${delayMs}ms before retry...")
                     delay(delayMs)
@@ -1339,6 +1442,57 @@ class PairingService(private val context: Context) {
         
         Log.e(TAG, "❌ All $maxAttempts attempts failed for operation '$operation'", lastException)
         return null
+    }
+    
+    /**
+     * Reset connection state variables
+     */
+    private fun resetConnectionState() {
+        Log.d(TAG, "🔄 Resetting connection state")
+        isConnectionHealthy.set(false)
+        retryAttempts.set(0)
+        reconnectionAttempts.set(0)
+        isReconnecting.set(false)
+    }
+    
+    /**
+     * Cleanup network resources specifically
+     */
+    private fun cleanupNetworkResources() {
+        Log.d(TAG, "🧹 Cleaning up network resources")
+        try {
+            clientSocket?.close()
+            clientSocket = null
+            
+            serverSocket?.close()
+            serverSocket = null
+            
+            // Evict idle connections from HTTP client
+            okHttpClient.connectionPool.evictAll()
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error cleaning up network resources", e)
+        }
+    }
+    
+    /**
+     * Stop all background jobs
+     */
+    private fun stopAllJobs() {
+        Log.d(TAG, "⏹️ Stopping all background jobs")
+        try {
+            heartbeatJob?.cancel()
+            heartbeatJob = null
+            
+            serverJob?.cancel()
+            serverJob = null
+            
+            reconnectionJob?.cancel()
+            reconnectionJob = null
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error stopping background jobs", e)
+        }
     }
     
     /**

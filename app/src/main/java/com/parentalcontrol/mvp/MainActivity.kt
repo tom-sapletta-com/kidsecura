@@ -26,6 +26,7 @@ import com.parentalcontrol.mvp.service.ScreenCaptureService
 import com.parentalcontrol.mvp.utils.PreferencesManager
 import com.parentalcontrol.mvp.utils.FileLogger
 import com.parentalcontrol.mvp.utils.SystemLogger
+import com.parentalcontrol.mvp.messaging.MessagingIntegrationManager
 import kotlinx.coroutines.*
 import java.io.File
 import java.text.SimpleDateFormat
@@ -41,6 +42,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var fileLogger: FileLogger
     private lateinit var systemLogger: SystemLogger
     private lateinit var stealthManager: StealthManager
+    private lateinit var messagingManager: MessagingIntegrationManager
     
     private var isServiceRunning = false
     private val logUpdateScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
