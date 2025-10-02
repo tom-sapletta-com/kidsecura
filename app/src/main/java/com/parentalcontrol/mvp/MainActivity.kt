@@ -137,41 +137,6 @@ class MainActivity : AppCompatActivity() {
                 }
             }
             
-            // Konfiguracja interwału
-            seekBarInterval.apply {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    min = 1
-                }
-                max = 10
-                progress = prefsManager.getCaptureInterval()
-                setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
-                    override fun onProgressChanged(seekBar: android.widget.SeekBar?, progress: Int, fromUser: Boolean) {
-                        tvIntervalValue.text = getString(R.string.interval_value, progress)
-                        if (fromUser) {
-                            prefsManager.setCaptureInterval(progress)
-                        }
-                    }
-                    override fun onStartTrackingTouch(seekBar: android.widget.SeekBar?) {}
-                    override fun onStopTrackingTouch(seekBar: android.widget.SeekBar?) {}
-                })
-            }
-            
-            // Przełączniki
-            switchCropBottom.isChecked = prefsManager.isCropBottomEnabled()
-            switchCropBottom.setOnCheckedChangeListener { _, isChecked ->
-                prefsManager.setCropBottomEnabled(isChecked)
-            }
-            
-            switchLocalAnalysis.isChecked = prefsManager.isLocalAnalysisEnabled()
-            switchLocalAnalysis.setOnCheckedChangeListener { _, isChecked ->
-                prefsManager.setLocalAnalysisEnabled(isChecked)
-            }
-            
-            switchSaveScreenshots.isChecked = prefsManager.isSaveScreenshotsEnabled()
-            switchSaveScreenshots.setOnCheckedChangeListener { _, isChecked ->
-                prefsManager.setSaveScreenshotsEnabled(isChecked)
-            }
-            
             // Podgląd logów
             btnViewLogs.setOnClickListener {
                 startActivity(Intent(this@MainActivity, LogViewerActivity::class.java))
@@ -435,12 +400,6 @@ class MainActivity : AppCompatActivity() {
                 tvStatus.setTextColor(ContextCompat.getColor(this@MainActivity, R.color.status_danger))
                 btnToggleMonitoring.text = getString(R.string.btn_start_monitoring)
             }
-            
-            // Wyłącz ustawienia podczas działania serwisu
-            seekBarInterval.isEnabled = !running
-            switchCropBottom.isEnabled = !running
-            switchLocalAnalysis.isEnabled = !running
-            switchSaveScreenshots.isEnabled = !running
         }
     }
     

@@ -71,6 +71,12 @@ class AnalysisSettingsActivity : AppCompatActivity() {
     }
     
     private fun initializeViews() {
+        // Back button
+        val btnBack = findViewById<android.widget.Button>(R.id.btnBack)
+        btnBack.setOnClickListener {
+            finish() // Zamknij activity i wróć do MainActivity
+        }
+        
         // Capture Settings
         seekBarInterval = findViewById(R.id.seekBarCaptureInterval)
         tvIntervalValue = findViewById(R.id.tvIntervalValue)

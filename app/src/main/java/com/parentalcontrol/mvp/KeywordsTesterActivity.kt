@@ -85,6 +85,12 @@ class KeywordsTesterActivity : AppCompatActivity() {
     }
     
     private fun initializeViews() {
+        // Back button
+        val btnBack = findViewById<android.widget.Button>(R.id.btnBack)
+        btnBack.setOnClickListener {
+            finish() // Zamknij activity i wróć do MainActivity
+        }
+        
         // Test input
         testInput = findViewById(R.id.testInput)
         
@@ -103,7 +109,7 @@ class KeywordsTesterActivity : AppCompatActivity() {
         resetTestButton = findViewById(R.id.resetTestButton)
         exportResultsButton = findViewById(R.id.exportResultsButton)
         
-        // Set up toolbar
+        // Set up toolbar (may not be visible due to theme, but keep for compatibility)
         supportActionBar?.title = "🔍 Tester słów kluczowych"
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
     }
