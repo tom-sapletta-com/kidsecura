@@ -272,12 +272,14 @@ class KeywordMonitorService : Service() {
                     
                     // Wykryj aktualną aplikację
                     val currentApp = appMonitor.getCurrentApp()
+                    val appName = currentApp?.appName ?: "Unknown App"
+                    val packageName = currentApp?.packageName ?: "unknown.package"
                     
                     // Loguj szczegóły przetwarzania
-                    fileLogger.logServiceEvent("🔄 Keyword Analysis: ${bitmap.width}x${bitmap.height} in app: ${currentApp.appName}")
+                    fileLogger.logServiceEvent("🔄 Keyword Analysis: ${bitmap.width}x${bitmap.height} in app: $appName")
                     
                     // Wykonaj OCR i analizę słownika
-                    performOCRAndKeywordAnalysis(bitmap, currentApp.appName, currentApp.packageName)
+                    performOCRAndKeywordAnalysis(bitmap, appName, packageName)
                     
                 } catch (e: Exception) {
                     Log.e(TAG, "❌ Error processing image for keyword monitoring", e)
