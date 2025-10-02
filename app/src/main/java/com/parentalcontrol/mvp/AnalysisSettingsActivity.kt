@@ -22,6 +22,11 @@ import com.parentalcontrol.mvp.utils.SystemLogger
  */
 class AnalysisSettingsActivity : AppCompatActivity() {
 
+    companion object {
+        private const val TAG = "AnalysisSettings"
+        private const val REQUEST_LOCATION_PERMISSION = 3001
+    }
+
     private lateinit var prefsManager: PreferencesManager
     private lateinit var systemLogger: SystemLogger
     
@@ -46,10 +51,6 @@ class AnalysisSettingsActivity : AppCompatActivity() {
     // UI Components - Child Session
     private lateinit var btnUnlockSession: Button
     private lateinit var tvSessionStatus: TextView
-    
-    companion object {
-        private const val TAG = "AnalysisSettings"
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -324,9 +325,5 @@ class AnalysisSettingsActivity : AppCompatActivity() {
         updateScreenTimeDisplay()
         updateLogCount()
         updateSessionStatus()
-    }
-    
-    companion object {
-        private const val REQUEST_LOCATION_PERMISSION = 3001
     }
 }

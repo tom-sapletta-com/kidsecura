@@ -85,6 +85,10 @@ class MainActivity : AppCompatActivity() {
             prefsManager = PreferencesManager(this)
             Log.d(TAG, "✅ PreferencesManager initialized")
             
+            // Inicjalizuj domyślne ustawienia dla nowych funkcji
+            prefsManager.initializeDefaultSettings()
+            Log.d(TAG, "✅ Default settings initialized")
+            
             mediaProjectionManager = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
             Log.d(TAG, "✅ MediaProjectionManager initialized")
             
