@@ -76,9 +76,8 @@ class IncidentManager(private val context: Context) {
         )
         
         Log.d(TAG, "Adding new incident: ${incident.id}")
-        Log.d(TAG, "Keywords: ${detectedKeywords.joinToString(", ")}")
+        systemLogger.i(TAG, "⚠️ New incident: ${incident.severity.displayName} - Keywords: ${detectedKeywords.joinToString(", ")}")
         Log.d(TAG, "Confidence: $confidence")
-        Log.d(TAG, "Severity: ${incident.severity}")
         
         // Dodaj do cache i storage
         incidentCache[incident.id] = incident
@@ -97,6 +96,7 @@ class IncidentManager(private val context: Context) {
             Log.d(TAG, "✅ Incident logged to file for MainActivity display")
         } catch (e: Exception) {
             Log.e(TAG, "❌ Error logging incident to file", e)
+            systemLogger.e(TAG, "❌ Error logging incident to file", e)
         }
         
         // Aktualizuj statystyki słów kluczowych
@@ -264,10 +264,12 @@ class IncidentManager(private val context: Context) {
                         Log.d(TAG, "Incident notification sent successfully to parent: ${parentDevice.deviceName}")
                     } else {
                         Log.w(TAG, "Failed to send incident notification to parent: ${parentDevice.deviceName}")
+                        systemLogger.w(TAG, "⚠️ Failed to send notification to parent: ${parentDevice.deviceName}")
                     }
                     
                 } catch (e: Exception) {
                     Log.e(TAG, "Error sending incident notification to parent ${parentDevice.deviceName}", e)
+                    systemLogger.e(TAG, "❌ Error sending notification to parent ${parentDevice.deviceName}", e)
                 }
             }
             
@@ -400,6 +402,7 @@ class IncidentManager(private val context: Context) {
             
         } catch (e: Exception) {
             Log.e(TAG, "Error sending test notification", e)
+            systemLogger.e(TAG, "❌ Error sending test notification", e)
             throw e
         }
     }

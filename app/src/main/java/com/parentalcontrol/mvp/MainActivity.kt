@@ -157,6 +157,21 @@ class MainActivity : AppCompatActivity() {
                 }
             }
             
+            // Detection Demo - Demonstracja wielojęzycznej detekcji
+            Log.d(TAG, "🎯 Setting up btnDetectionDemo click listener")
+            btnDetectionDemo.setOnClickListener {
+                try {
+                    Log.d(TAG, "🎯 btnDetectionDemo clicked - Opening Detection Demo Activity")
+                    systemLogger.logButtonClick("Detection Demo", "MainActivity", true)
+                    startActivity(Intent(this@MainActivity, KeywordDetectionDemoActivity::class.java))
+                    Log.d(TAG, "✅ Detection Demo Activity started successfully")
+                } catch (e: Exception) {
+                    Log.e(TAG, "❌ BŁĄD podczas otwierania Detection Demo", e)
+                    systemLogger.logButtonClick("Detection Demo", "MainActivity", false, e.message)
+                    Toast.makeText(this@MainActivity, "Błąd Detection Demo: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+            }
+            
             // Zarządzanie urządzeniami
             Log.d(TAG, "🔧 Setting up btnManageDevices click listener")
             btnManageDevices.setOnClickListener {

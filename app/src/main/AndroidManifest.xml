@@ -201,6 +201,20 @@
             android:theme="@style/Theme.ParentalControl"
             android:parentActivityName=".MainActivity" />
 
+        <activity
+            android:name=".KeywordDetectionDemoActivity"
+            android:exported="false"
+            android:label="🔍 Demo Wykrywania Słów"
+            android:theme="@style/Theme.ParentalControl"
+            android:parentActivityName=".MainActivity" />
+
+        <activity
+            android:name=".PairingProgressActivity"
+            android:exported="false"
+            android:label="Parowanie Urządzeń"
+            android:theme="@style/Theme.ParentalControl"
+            android:screenOrientation="portrait" />
+
         <service
             android:name=".service.ScreenCaptureService"
             android:enabled="true"

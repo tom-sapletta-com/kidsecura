@@ -109,11 +109,21 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="🔍 Tester słów"
+                android:text="🔍 Tester"
                 android:layout_marginStart="4dp"
                 style="@style/Widget.Material3.Button.OutlinedButton" />
 
         </LinearLayout>
+        
+        <!-- Demo Row -->
+        <Button
+            android:id="@+id/btnDetectionDemo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="🎯 DEMO: Wielojęzyczna Detekcja Słów Kluczowych"
+            android:layout_marginBottom="8dp"
+            android:textStyle="bold"
+            android:backgroundTint="@color/purple_500" />
 
         <!-- Second button row -->
         <LinearLayout

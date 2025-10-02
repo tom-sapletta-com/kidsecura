@@ -1638,4 +1638,36 @@ class PairingService(private val context: Context) {
         Log.i(TAG, message)
         systemLogger.i(TAG, message)
     }
+    
+    /**
+     * Testuje połączenie TCP z danym hostem i portem
+     * Używane do diagnozy problemów z parowaniem
+     */
+    suspend fun testConnection(host: String, port: Int): Boolean = withContext(Dispatchers.IO) {
+        try {
+            logInfo("🔌 Testing connection to $host:$port")
+            val socket = Socket()
+            socket.connect(java.net.InetSocketAddress(host, port), CONNECTION_TIMEOUT.toInt())
+            socket.close()
+            logInfo("✅ Connection test successful to $host:$port")
+            true
+        } catch (e: Exception) {
+            logError("❌ Connection test failed to $host:$port", e)
+            false
+        }
+    }
+    
+    /**
+     * Pobiera listę sparowanych urządzeń
+     */
+    fun getPairedDevices(): List<PairingData> {
+        return try {
+            val json = prefs.getString("paired_devices", null) ?: return emptyList()
+            val type = object : com.google.gson.reflect.TypeToken<List<PairingData>>() {}.type
+            gson.fromJson(json, type) ?: emptyList()
+        } catch (e: Exception) {
+            logError("❌ Error getting paired devices", e)
+            emptyList()
+        }
+    }
 }
