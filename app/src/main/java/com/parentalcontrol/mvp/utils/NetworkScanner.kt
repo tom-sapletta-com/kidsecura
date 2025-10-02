@@ -5,6 +5,7 @@ import android.net.wifi.WifiManager
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import java.net.InetAddress
 import java.net.InetSocketAddress
@@ -81,31 +82,33 @@ class NetworkScanner(private val context: Context) {
         
         try {
             // Skanuj 1-254 (pomijamy .0 i .255)
-            val jobs = (1..254).map { host ->
-                val ip = "$subnet.$host"
-                
-                // Asynchroniczne sprawdzenie każdego hosta
-                async {
-                    try {
-                        val device = checkHost(ip)
-                        if (device != null) {
-                            systemLogger.i(TAG, "✅ Znaleziono urządzenie: ${device.getDisplayName()}")
-                            onDeviceFound(device)
-                            device
-                        } else {
+            coroutineScope {
+                val jobs = (1..254).map { host ->
+                    val ip = "$subnet.$host"
+                    
+                    // Asynchroniczne sprawdzenie każdego hosta
+                    async {
+                        try {
+                            val device = checkHost(ip)
+                            if (device != null) {
+                                systemLogger.i(TAG, "✅ Znaleziono urządzenie: ${device.getDisplayName()}")
+                                onDeviceFound(device)
+                                device
+                            } else {
+                                null
+                            }
+                        } catch (e: Exception) {
                             null
                         }
-                    } catch (e: Exception) {
-                        null
                     }
                 }
-            }
-            
-            // Czekaj na wszystkie wyniki
-            jobs.forEach { job ->
-                val device = job.await()
-                if (device != null) {
-                    devices.add(device)
+                
+                // Czekaj na wszystkie wyniki
+                jobs.forEach { job ->
+                    val device = job.await()
+                    if (device != null) {
+                        devices.add(device)
+                    }
                 }
             }
             
@@ -187,34 +190,36 @@ class NetworkScanner(private val context: Context) {
         systemLogger.i(TAG, "🔍 Skanowanie urządzeń z portem parowania ($PAIRING_PORT)")
         
         try {
-            val jobs = (1..254).map { host ->
-                val ip = "$subnet.$host"
-                
-                async {
-                    try {
-                        // Najpierw sprawdź port (szybsze)
-                        if (checkPort(ip, PAIRING_PORT)) {
-                            val device = checkHost(ip)
-                            if (device != null) {
-                                systemLogger.i(TAG, "✅ Znaleziono urządzenie z portem parowania: ${device.getDisplayName()}")
-                                onDeviceFound(device)
-                                device
+            coroutineScope {
+                val jobs = (1..254).map { host ->
+                    val ip = "$subnet.$host"
+                    
+                    async {
+                        try {
+                            // Najpierw sprawdź port (szybsze)
+                            if (checkPort(ip, PAIRING_PORT)) {
+                                val device = checkHost(ip)
+                                if (device != null) {
+                                    systemLogger.i(TAG, "✅ Znaleziono urządzenie z portem parowania: ${device.getDisplayName()}")
+                                    onDeviceFound(device)
+                                    device
+                                } else {
+                                    null
+                                }
                             } else {
                                 null
                             }
-                        } else {
+                        } catch (e: Exception) {
                             null
                         }
-                    } catch (e: Exception) {
-                        null
                     }
                 }
-            }
-            
-            jobs.forEach { job ->
-                val device = job.await()
-                if (device != null) {
-                    devices.add(device)
+                
+                jobs.forEach { job ->
+                    val device = job.await()
+                    if (device != null) {
+                        devices.add(device)
+                    }
                 }
             }
             
