@@ -148,14 +148,14 @@ class FileLogger(private val context: Context) {
      */
     suspend fun logKeywordDetection(
         keyword: String,
-        context: String,
+        textContext: String,
         appName: String,
         timestamp: Long = System.currentTimeMillis()
     ) {
         val logMessage = buildString {
             append("🔍 KEYWORD DETECTED\n")
             append("  Keyword: '$keyword'\n")
-            append("  Context: ${context.take(100)}\n")
+            append("  Context: ${textContext.take(100)}\n")
             append("  App: $appName\n")
             append("  Time: ${dateFormat.format(Date(timestamp))}")
         }
