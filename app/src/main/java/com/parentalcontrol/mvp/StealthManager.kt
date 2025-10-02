@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.util.Log
+import com.parentalcontrol.mvp.BuildConfig
 import com.parentalcontrol.mvp.utils.PreferencesManager
 import com.parentalcontrol.mvp.utils.SystemLogger
 import java.util.*
@@ -359,6 +360,12 @@ class StealthManager(
      */
     fun activateAntiTamperingProtection() {
         try {
+            // W trybie DEBUG pomijamy ochronę anti-tampering, aby nie ukrywać aplikacji podczas developmentu
+            if (BuildConfig.DEBUG) {
+                systemLogger.d(TAG, "🛡️ Anti-tampering protection SKIPPED in DEBUG build")
+                return
+            }
+
             systemLogger.d(TAG, "🛡️ Activating anti-tampering protection")
             
             if (detectTamperingAttempts()) {
