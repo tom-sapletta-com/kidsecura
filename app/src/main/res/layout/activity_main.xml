@@ -245,6 +245,16 @@
             android:textStyle="bold"
             android:backgroundTint="@color/gray_600" />
 
+        <!-- KEYWORD MONITORING -->
+        <Button
+            android:id="@+id/btnKeywordMonitoring"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="🔍 Monitor Słownika (10s)"
+            android:layout_marginBottom="8dp"
+            android:textStyle="bold"
+            android:backgroundTint="@color/danger" />
+
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

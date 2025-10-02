@@ -84,6 +84,20 @@ class MainActivity : AppCompatActivity() {
         }
     }
     
+    // KeywordMonitor launcher
+    private val keywordMonitorLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val data = result.data
+            if (data != null) {
+                startKeywordMonitorService(result.resultCode, data)
+            }
+        } else {
+            Toast.makeText(this, "Anulowano przechwytywanie ekranu dla monitora słownika", Toast.LENGTH_SHORT).show()
+        }
+    }
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         Log.d(TAG, "🚀 MainActivity.onCreate() - START")
         try {
@@ -350,6 +364,21 @@ class MainActivity : AppCompatActivity() {
                     Log.e(TAG, "❌ BŁĄD podczas otwierania Screen Reader Settings", e)
                     systemLogger.logButtonClick("Screen Reader Settings", "MainActivity", false, e.message)
                     Toast.makeText(this@MainActivity, "Błąd ustawień: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+            }
+            
+            // KEYWORD MONITORING
+            Log.d(TAG, "🔍 Setting up Keyword Monitoring button")
+            btnKeywordMonitoring.setOnClickListener {
+                try {
+                    Log.d(TAG, "🔍 btnKeywordMonitoring clicked - Starting Keyword Monitoring")
+                    systemLogger.logButtonClick("Keyword Monitoring", "MainActivity", true)
+                    startKeywordMonitoring()
+                    Log.d(TAG, "✅ Keyword Monitoring started")
+                } catch (e: Exception) {
+                    Log.e(TAG, "❌ BŁĄD podczas uruchamiania Keyword Monitoring", e)
+                    systemLogger.logButtonClick("Keyword Monitoring", "MainActivity", false, e.message)
+                    Toast.makeText(this@MainActivity, "Błąd monitora słownika: ${e.message}", Toast.LENGTH_LONG).show()
                 }
             }
         }
@@ -639,6 +668,80 @@ class MainActivity : AppCompatActivity() {
         } catch (e: Exception) {
             Log.e(TAG, "❌ Error stopping screen reader", e)
             Toast.makeText(this, "Błąd zatrzymywania: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+    
+    /**
+     * Uruchamia monitoring słownika - analizuje tekst pod kątem niebezpiecznych słów
+     */
+    private fun startKeywordMonitoring() {
+        try {
+            Log.d(TAG, "🔍 startKeywordMonitoring() - START")
+            systemLogger.i(TAG, "Starting Keyword Monitoring mode")
+            
+            AlertDialog.Builder(this)
+                .setTitle("🔍 Monitor Słownika")
+                .setMessage("""
+                    🚨 MONITORING SŁOWNIKA AKTYWNY
+                    
+                    Aplikacja będzie:
+                    ✅ Przechwytywać ekran co 10 sekund
+                    ✅ Analizować tekst ze słownikiem niebezpiecznych słów
+                    ✅ Wysyłać alerty do urządzenia rodzica
+                    ✅ Logować wszystkie wykrycia
+                    ✅ Automatycznie stop po 60 sekundach
+                    
+                    🔒 TRYB RODZICIELSKI
+                    
+                    ⚠️ UWAGA: Funkcja nadzoru rodzicielskiego
+                    
+                    Rozpocząć monitoring?
+                """.trimIndent())
+                .setPositiveButton("🔍 Rozpocznij Monitoring") { _, _ ->
+                    try {
+                        // Uruchom dedykowany KeywordMonitor serwis
+                        val captureIntent = mediaProjectionManager.createScreenCaptureIntent()
+                        keywordMonitorLauncher.launch(captureIntent)
+                        
+                        Toast.makeText(this, 
+                            "🔍 MONITOR SŁOWNIKA BĘDZIE URUCHOMIONY\nPo przyznaniu uprawnień", 
+                            Toast.LENGTH_LONG).show()
+                            
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Error starting Keyword Monitoring", e)
+                        Toast.makeText(this, "Błąd monitora: ${e.message}", Toast.LENGTH_LONG).show()
+                    }
+                }
+                .setNegativeButton("Anuluj", null)
+                .setNeutralButton("🛑 Stop Monitor") { _, _ ->
+                    stopKeywordMonitoring()
+                }
+                .show()
+                
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error in startKeywordMonitoring", e)
+            systemLogger.e(TAG, "Error starting keyword monitoring", e)
+            Toast.makeText(this, "Błąd monitora słownika: ${e.message}", Toast.LENGTH_LONG).show()
+        }
+    }
+    
+    /**
+     * Zatrzymuje monitoring słownika
+     */
+    private fun stopKeywordMonitoring() {
+        try {
+            Log.d(TAG, "🛑 stopKeywordMonitoring() - Stopping monitoring")
+            
+            // Zatrzymaj KeywordMonitor serwis
+            val intent = Intent(this, com.parentalcontrol.mvp.service.KeywordMonitorService::class.java)
+            stopService(intent)
+            
+            Toast.makeText(this, "🛑 Monitor słownika zatrzymany", Toast.LENGTH_SHORT).show()
+            systemLogger.i(TAG, "Keyword monitoring stopped")
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error stopping keyword monitoring", e)
+            Toast.makeText(this, "Błąd zatrzymywania monitora: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
     

@@ -446,9 +446,24 @@ class ScreenReaderService : Service(), TextToSpeech.OnInitListener {
         // Podziel tekst na linie i oczyść - ale zachowaj więcej tekstu
         val allLines = text.split("\n").map { it.trim() }
         val nonEmptyLines = allLines.filter { it.isNotEmpty() && it.length > 1 }
+        
+        // BARDZIEJ PERMISYWNE FILTROWANIE - akceptuj więcej typów tekstu
         val filteredLines = nonEmptyLines.filter { line -> 
-            // Filtruj tylko sensowny tekst (polskie znaki, cyfry, podstawowe znaki)
-            line.matches(Regex(".*[a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ0-9\\s.,!?-].*"))
+            // Akceptuj linie z jakimikolwiek literami, cyframi lub podstawowymi znakami
+            line.matches(Regex(".*[a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ0-9].*")) ||
+            line.length >= 3 // Lub jakąkolwiek linię z co najmniej 3 znakami
+        }
+        
+        // Loguj odrzucone linie żeby zobaczyć co tracimy
+        val rejectedLines = nonEmptyLines.filter { line ->
+            !line.matches(Regex(".*[a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ0-9].*")) && line.length < 3
+        }
+        
+        if (rejectedLines.isNotEmpty()) {
+            Log.d(TAG, "❌ Rejected ${rejectedLines.size} lines: ${rejectedLines.take(3)}")
+            serviceScope.launch {
+                fileLogger.logServiceEvent("❌ REJECTED LINES (${rejectedLines.size}): ${rejectedLines.joinToString(" | ")}")
+            }
         }
         
         Log.d(TAG, "✂️ Text processing: ${allLines.size} total lines -> ${nonEmptyLines.size} non-empty -> ${filteredLines.size} filtered")
@@ -462,28 +477,46 @@ class ScreenReaderService : Service(), TextToSpeech.OnInitListener {
         
         val lines = filteredLines
         
-        // Znajdź nowy tekst (którego jeszcze nie przeczytaliśmy)
+        // NOWA LOGIKA: Czytaj WSZYSTKIE dostępne linie, nie tylko "nowe"
+        // Znajdź nowy tekst (ale jeśli nie ma nowego, czytaj wszystko)
         val newLines = lines.filter { line ->
             !lastReadText.contains(line)
         }
         
-        if (newLines.isNotEmpty()) {
-            // Zaktualizuj zbiór przeczytanego tekstu
-            lastReadText.clear()
-            lastReadText.addAll(lines.takeLast(10)) // Zwiększyłem z 5 na 10
-            
-            // PRZECZYTAJ WIĘCEJ TEKSTU - do 250 znaków (zwiększamy próg)
-            var textToRead = ""
-            var charCount = 0
-            val targetLength = 250
-            
-            // Loguj szczegóły budowania tekstu
-            Log.d(TAG, "🔧 Building text from ${newLines.size} new lines, target: $targetLength chars")
+        // Jeśli nie ma nowych linii, użyj wszystkich dostępnych linii
+        val linesToProcess = if (newLines.isEmpty()) {
+            Log.d(TAG, "⚠️ No new lines found, using ALL ${lines.size} lines")
             serviceScope.launch {
-                fileLogger.logServiceEvent("🔧 TEXT BUILDING: ${newLines.size} new lines available, target: $targetLength chars")
+                fileLogger.logServiceEvent("⚠️ NO NEW LINES: Using ALL ${lines.size} lines instead")
+            }
+            lines
+        } else {
+            Log.d(TAG, "✅ Found ${newLines.size} new lines out of ${lines.size} total")
+            serviceScope.launch {
+                fileLogger.logServiceEvent("✅ NEW LINES FOUND: ${newLines.size} new out of ${lines.size} total")
+            }
+            newLines
+        }
+        
+        if (linesToProcess.isNotEmpty()) {
+            // Zaktualizuj zbiór przeczytanego tekstu (tylko jeśli były nowe linie)
+            if (newLines.isNotEmpty()) {
+                lastReadText.clear()
+                lastReadText.addAll(lines.takeLast(15)) // Zwiększyłem z 10 na 15
             }
             
-            for ((index, line) in newLines.withIndex()) {
+            // PRZECZYTAJ WIĘCEJ TEKSTU - ZWIĘKSZAMY DO 500 znaków!
+            var textToRead = ""
+            var charCount = 0
+            val targetLength = 500  // ZWIĘKSZONE z 250 na 500!
+            
+            // Loguj szczegóły budowania tekstu
+            Log.d(TAG, "🔧 Building text from ${linesToProcess.size} lines (${newLines.size} new), target: $targetLength chars")
+            serviceScope.launch {
+                fileLogger.logServiceEvent("🔧 TEXT BUILDING: ${linesToProcess.size} lines available (${newLines.size} new), target: $targetLength chars")
+            }
+            
+            for ((index, line) in linesToProcess.withIndex()) {
                 val lineWithSeparator = if (textToRead.isEmpty()) line else ". $line"
                 val wouldBeLength = charCount + lineWithSeparator.length
                 
@@ -508,7 +541,7 @@ class ScreenReaderService : Service(), TextToSpeech.OnInitListener {
             
             // Loguj finalne wyniki
             serviceScope.launch {
-                fileLogger.logServiceEvent("🔧 FINAL TEXT BUILD: ${textToRead.length} chars from ${newLines.size} lines")
+                fileLogger.logServiceEvent("🔧 FINAL TEXT BUILD: ${textToRead.length} chars from ${linesToProcess.size} available lines (target was $targetLength)")
             }
             
             if (textToRead.length > 5) { // Zmniejszyłem próg z 10 na 5
