@@ -188,7 +188,7 @@ class MessagingIntegrationManagerTest {
 
         // Then - should handle failure gracefully
         // In real implementation, this would test retry mechanism
-        verify(mockSystemLogger, atLeastOnce()).logInfo(any())
+        verify(mockSystemLogger, atLeastOnce()).d(any(), any())
     }
 
     @Test
