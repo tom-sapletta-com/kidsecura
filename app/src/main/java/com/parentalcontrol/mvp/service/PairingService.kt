@@ -111,6 +111,8 @@ class PairingService(private val context: Context) {
         serviceScope.launch {
             try {
                 Log.d(TAG, "🎧 Starting listening server - trying available ports...")
+                systemLogger.i(TAG, "🔌 PAROWANIE: Uruchamianie serwera nasłuchującego...")
+                systemLogger.i(TAG, "🔌 Dostępne porty: ${PairingConfig.AVAILABLE_PORTS.joinToString()}")
                 
                 // Zamknij poprzedni serwer jeśli istnieje
                 stopServer()
@@ -125,10 +127,12 @@ class PairingService(private val context: Context) {
                 for (port in PairingConfig.AVAILABLE_PORTS) {
                     try {
                         Log.d(TAG, "🔌 Trying port $port...")
+                        systemLogger.i(TAG, "🔌 Próba portu $port...")
                         
                         // Spróbuj otworzyć port
                         if (startServerOnPort(port)) {
                             Log.d(TAG, "✅ Port $port opened successfully")
+                            systemLogger.i(TAG, "✅ Port $port otwarty pomyślnie")
                             
                             // Opcjonalne testowanie portu (może być czasochłonne)
                             // Dla szybkości pomijamy test - jeśli ServerSocket się otworzy, to działa
@@ -138,29 +142,36 @@ class PairingService(private val context: Context) {
                                 // Szybka weryfikacja - sprawdź czy socket jest faktycznie otwarty
                                 if (serverSocket != null && !serverSocket!!.isClosed) {
                                     Log.d(TAG, "✅ Port $port verified - ServerSocket is open")
+                                    systemLogger.i(TAG, "✅ SUKCES: Port $port zweryfikowany i gotowy!")
                                     successfulPort = port
                                     break
                                 } else {
                                     Log.w(TAG, "⚠️ Port $port - ServerSocket verification failed")
+                                    systemLogger.w(TAG, "⚠️ Port $port - weryfikacja socket nie powiodła się")
                                     errors.add("Port $port: socket verification failed")
                                 }
                             } else {
                                 // Pełny test połączenia
+                                systemLogger.i(TAG, "🧪 Testowanie portu $port...")
                                 if (testPort(port)) {
                                     Log.d(TAG, "✅ Port $port test passed - server is accessible")
+                                    systemLogger.i(TAG, "✅ SUKCES: Port $port przetestowany - działa!")
                                     successfulPort = port
                                     break
                                 } else {
                                     Log.w(TAG, "⚠️ Port $port opened but test failed")
+                                    systemLogger.w(TAG, "⚠️ Port $port otwarty ale test nie powiódł się")
                                     stopServer()
                                     errors.add("Port $port: test failed")
                                 }
                             }
                         } else {
+                            systemLogger.w(TAG, "❌ Port $port: nie można otworzyć (zajęty lub zablokowany)")
                             errors.add("Port $port: failed to bind")
                         }
                     } catch (e: Exception) {
                         Log.w(TAG, "❌ Port $port failed: ${e.message}")
+                        systemLogger.e(TAG, "❌ Port $port: błąd - ${e.message}")
                         errors.add("Port $port: ${e.message}")
                         stopServer()
                     }
@@ -170,16 +181,26 @@ class PairingService(private val context: Context) {
                 }
                 
                 if (successfulPort != null) {
+                    val localIp = getLocalIPAddress() ?: "Unknown"
+                    systemLogger.i(TAG, "✅ SERWER URUCHOMIONY na porcie $successfulPort")
+                    systemLogger.i(TAG, "📡 Adres: $localIp:$successfulPort")
+                    systemLogger.i(TAG, "🎯 Urządzenie gotowe do parowania!")
                     callback(true, "Server started on port $successfulPort", successfulPort)
                     Log.d(TAG, "✅ Listening server started successfully on port $successfulPort")
                 } else {
                     val errorMsg = "All ports failed:\n${errors.joinToString("\n")}"
+                    systemLogger.e(TAG, "❌ BŁĄD: Nie można uruchomić serwera na żadnym porcie")
+                    systemLogger.e(TAG, "❌ Sprawdzone porty: ${PairingConfig.AVAILABLE_PORTS.joinToString()}")
+                    errors.forEach { error ->
+                        systemLogger.e(TAG, "  • $error")
+                    }
                     callback(false, errorMsg, null)
                     Log.e(TAG, "❌ Failed to start server on any port")
                 }
                 
             } catch (e: Exception) {
                 Log.e(TAG, "❌ Error starting listening server", e)
+                systemLogger.e(TAG, "❌ KRYTYCZNY BŁĄD parowania: ${e.message}", e)
                 callback(false, "Server error: ${e.message}", null)
             }
         }

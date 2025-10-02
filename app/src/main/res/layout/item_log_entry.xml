@@ -54,7 +54,7 @@
                 android:layout_height="wrap_content"
                 android:text="17:52:15"
                 android:textSize="12sp"
-                android:textColor="@color/gray_400" />
+                android:textColor="@color/white" />
 
         </LinearLayout>
 
@@ -75,7 +75,7 @@
             android:layout_height="wrap_content"
             android:text="ALERT: Suspicious content detected..."
             android:textSize="12sp"
-            android:textColor="@color/gray_400"
+            android:textColor="@color/white"
             android:fontFamily="monospace"
             android:visibility="gone" />
 
