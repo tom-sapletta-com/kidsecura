@@ -351,17 +351,16 @@ class KeywordMonitorService : Service() {
     }
     
     private fun analyzeTextForKeywords(text: String, appName: String, packageName: String) {
-        try {
-            Log.d(TAG, "🔍 Analyzing ${text.length} characters for dangerous keywords in $appName")
-            
-            // Loguj surowy tekst
-            serviceScope.launch {
+        serviceScope.launch {
+            try {
+                Log.d(TAG, "🔍 Analyzing ${text.length} characters for dangerous keywords in $appName")
+                
+                // Loguj surowy tekst
                 fileLogger.logServiceEvent("🔍 KEYWORD ANALYSIS: Scanning ${text.length} chars from $appName")
                 fileLogger.logServiceEvent("📝 RAW TEXT FROM $appName: '$text'")
-            }
-            
-            // Użyj ContentAnalyzer do wykrycia niebezpiecznej zawartości
-            val analysisResult = contentAnalyzer.analyze(bitmap = null, ocrText = text, appName = appName)
+                
+                // Użyj ContentAnalyzer do wykrycia niebezpiecznej zawartości
+                val analysisResult = contentAnalyzer.analyzeTextOnly(text)
             
             if (analysisResult.isSuspicious) {
                 // WYKRYTO NIEBEZPIECZNĄ ZAWARTOŚĆ!
@@ -395,14 +394,11 @@ class KeywordMonitorService : Service() {
                 
             } else {
                 Log.d(TAG, "✅ No dangerous keywords detected in $appName")
-                serviceScope.launch {
-                    fileLogger.logServiceEvent("✅ KEYWORD CHECK: No threats detected in $appName")
-                }
+                fileLogger.logServiceEvent("✅ KEYWORD CHECK: No threats detected in $appName")
             }
             
-        } catch (e: Exception) {
-            Log.e(TAG, "❌ Error analyzing keywords", e)
-            serviceScope.launch {
+            } catch (e: Exception) {
+                Log.e(TAG, "❌ Error analyzing keywords", e)
                 fileLogger.logServiceEvent("❌ Keyword Analysis Error: ${e.message}")
             }
         }
@@ -412,26 +408,38 @@ class KeywordMonitorService : Service() {
         try {
             Log.d(TAG, "📤 Sending parent alert for detection in $appName")
             
-            // Wyślij przez wszystkie dostępne kanały
+            // Wyślij natychmiastowe powiadomienie na tym urządzeniu
+            try {
+                notificationHelper.showAlert(
+                    title = "🚨 WYKRYTO NIEBEZPIECZNĄ ZAWARTOŚĆ",
+                    message = "W aplikacji $appName wykryto: ${analysisResult.detectionType}",
+                    confidence = (analysisResult.confidence * 100).toInt()
+                )
+                
+                serviceScope.launch {
+                    fileLogger.logServiceEvent("📤 URGENT ALERT: Critical notification shown to parent")
+                }
+                
+            } catch (e: Exception) {
+                Log.e(TAG, "❌ Error sending urgent notification", e)
+                serviceScope.launch {
+                    fileLogger.logServiceEvent("❌ URGENT ALERT ERROR: ${e.message}")
+                }
+            }
+            
+            // Loguj szczegółowy alert do pliku (dostępny w Podglądzie Logów)
             serviceScope.launch {
                 try {
-                    // Telegram
-                    messagingManager.sendTelegramAlert(
-                        title = "🚨 ALERT BEZPIECZEŃSTWA",
-                        message = alertMessage
-                    )
-                    
-                    // Email (jeśli skonfigurowany)
-                    messagingManager.sendEmailAlert(
-                        subject = "🚨 KidSecura: Wykryto niebezpieczną zawartość w $appName",
-                        body = alertMessage
-                    )
-                    
-                    fileLogger.logServiceEvent("📤 PARENT ALERT SENT: Notification sent to parent device")
+                    fileLogger.logServiceEvent("🚨 PARENT ALERT #$detectionCount:")
+                    fileLogger.logServiceEvent("📱 App: $appName")
+                    fileLogger.logServiceEvent("🔍 Threat: ${analysisResult.detectionType}")
+                    fileLogger.logServiceEvent("⚠️ Risk Level: ${(analysisResult.confidence * 100).toInt()}%")
+                    fileLogger.logServiceEvent("📝 Description: ${analysisResult.description}")
+                    fileLogger.logServiceEvent("💬 Found Text: '${analysisResult.extractedText?.take(200)}...'")
+                    fileLogger.logServiceEvent("⏰ Time: ${Date()}")
                     
                 } catch (e: Exception) {
-                    Log.e(TAG, "❌ Error sending parent alert", e)
-                    fileLogger.logServiceEvent("❌ ALERT SEND ERROR: ${e.message}")
+                    Log.e(TAG, "❌ Error logging parent alert", e)
                 }
             }
             
@@ -469,18 +477,29 @@ class KeywordMonitorService : Service() {
             
             Log.d(TAG, "📊 Session summary: $detectionCount detections in ${sessionDurationMin} minutes")
             
-            // Wyślij podsumowanie do rodziców
+            // Wyślij podsumowanie przez powiadomienie
+            try {
+                notificationHelper.showAlert(
+                    title = "📊 Podsumowanie Monitoringu Słownika",
+                    message = "Sesja ${sessionDurationMin}min: wykryto $detectionCount zagrożeń",
+                    confidence = if (detectionCount > 0) 100 else 0
+                )
+            } catch (e: Exception) {
+                Log.e(TAG, "❌ Error showing summary notification", e)
+            }
+            
+            // Loguj szczegółowe podsumowanie
             serviceScope.launch {
                 try {
-                    messagingManager.sendTelegramAlert(
-                        title = "📊 Podsumowanie Monitoringu",
-                        message = summaryMessage
-                    )
-                    
-                    fileLogger.logServiceEvent("📊 SESSION SUMMARY: $detectionCount detections, ${sessionDurationMin}min duration")
+                    fileLogger.logServiceEvent("📊 SESSION SUMMARY:")
+                    fileLogger.logServiceEvent("⏱️ Duration: ${sessionDurationMin} minutes")
+                    fileLogger.logServiceEvent("🔍 Detections: $detectionCount threats found")
+                    fileLogger.logServiceEvent("📱 Scan Interval: ${monitorInterval}s")
+                    fileLogger.logServiceEvent("📅 End Time: ${Date()}")
+                    fileLogger.logServiceEvent("🎯 Status: ${if (detectionCount > 0) "THREATS DETECTED" else "CLEAN SESSION"}")
                     
                 } catch (e: Exception) {
-                    Log.e(TAG, "❌ Error sending session summary", e)
+                    Log.e(TAG, "❌ Error logging session summary", e)
                 }
             }
             

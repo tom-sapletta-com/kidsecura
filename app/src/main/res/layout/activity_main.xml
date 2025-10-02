@@ -93,25 +93,33 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginBottom="8dp">
+            android:layout_marginBottom="2dp">
 
             <Button
                 android:id="@+id/btnViewLogs"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="44dp"
                 android:layout_weight="1"
-                android:text="@string/btn_view_logs"
-                android:layout_marginEnd="4dp"
-                style="@style/Widget.Material3.Button.OutlinedButton" />
+                android:text="📋 Logi"
+                android:layout_marginEnd="2dp"
+                android:textStyle="bold"
+                android:backgroundTint="#4CAF50"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:cornerRadius="2dp" />
 
             <Button
                 android:id="@+id/btnKeywordsTester"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="44dp"
                 android:layout_weight="1"
                 android:text="🔍 Tester"
-                android:layout_marginStart="4dp"
-                style="@style/Widget.Material3.Button.OutlinedButton" />
+                android:layout_marginStart="2dp"
+                android:textStyle="bold"
+                android:backgroundTint="#9C27B0"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:cornerRadius="2dp" />
 
         </LinearLayout>
         
@@ -119,36 +127,47 @@
         <Button
             android:id="@+id/btnDetectionDemo"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="44dp"
             android:text="🎯 DEMO: Wielojęzyczna Detekcja Słów Kluczowych"
-            android:layout_marginBottom="8dp"
+            android:layout_marginBottom="2dp"
             android:textStyle="bold"
-            android:backgroundTint="@color/info" />
+            android:backgroundTint="#00BCD4"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:cornerRadius="2dp" />
 
         <!-- Second button row -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginBottom="8dp">
+            android:layout_marginBottom="2dp">
 
             <Button
                 android:id="@+id/btnManageDevices"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="44dp"
                 android:layout_weight="1"
-                android:text="Urządzenia"
-                android:layout_marginEnd="4dp"
-                style="@style/Widget.Material3.Button.OutlinedButton" />
+                android:text="📱 Urządzenia"
+                android:layout_marginEnd="2dp"
+                android:textStyle="bold"
+                android:backgroundTint="#2196F3"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:cornerRadius="2dp" />
 
             <Button
                 android:id="@+id/btnViewIncidents"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="44dp"
                 android:layout_weight="1"
-                android:text="Incydenty"
-                android:layout_marginStart="4dp"
-                style="@style/Widget.Material3.Button.OutlinedButton" />
+                android:text="⚠️ Incydenty"
+                android:layout_marginStart="2dp"
+                android:textStyle="bold"
+                android:backgroundTint="#F44336"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:cornerRadius="2dp" />
 
         </LinearLayout>
 
@@ -157,24 +176,33 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginBottom="8dp">
+            android:layout_marginBottom="2dp">
 
             <Button
                 android:id="@+id/btnPairDevice"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="44dp"
                 android:layout_weight="1"
-                android:text="@string/btn_pair_device"
-                android:layout_marginEnd="4dp" />
+                android:text="🔗 Sparuj"
+                android:layout_marginEnd="2dp"
+                android:textStyle="bold"
+                android:backgroundTint="#00BCD4"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:cornerRadius="2dp" />
 
             <Button
                 android:id="@+id/btnAlertSettings"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="44dp"
                 android:layout_weight="1"
-                android:text="Ustawienia"
-                android:layout_marginStart="4dp"
-                style="@style/Widget.Material3.Button.OutlinedButton" />
+                android:text="⚙️ Ustawienia"
+                android:layout_marginStart="2dp"
+                android:textStyle="bold"
+                android:backgroundTint="#795548"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:cornerRadius="2dp" />
 
         </LinearLayout>
         
@@ -182,36 +210,47 @@
         <Button
             android:id="@+id/btnAnalysisSettings"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="44dp"
             android:text="⚙️ Ustawienia Analizy i Monitoringu"
-            android:layout_marginBottom="8dp"
-            android:textStyle="bold" />
+            android:layout_marginBottom="2dp"
+            android:textStyle="bold"
+            android:backgroundTint="#795548"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:cornerRadius="2dp" />
 
         <!-- Fourth button row - STEALTH MODE -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginBottom="8dp">
+            android:layout_marginBottom="2dp">
 
             <Button
                 android:id="@+id/btnStealthMode"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="44dp"
                 android:layout_weight="1"
                 android:text="🕵️ Tryb Ukryty"
-                android:layout_marginEnd="4dp"
-                android:background="?android:attr/colorAccent"
-                android:textColor="@color/md_theme_light_onPrimary" />
+                android:layout_marginEnd="2dp"
+                android:textStyle="bold"
+                android:backgroundTint="#673AB7"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:cornerRadius="2dp" />
 
             <Button
                 android:id="@+id/btnStealthSettings"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="44dp"
                 android:layout_weight="1"
                 android:text="🎭 Konfiguracja"
-                android:layout_marginStart="4dp"
-                style="@style/Widget.Material3.Button.OutlinedButton" />
+                android:layout_marginStart="2dp"
+                android:textStyle="bold"
+                android:backgroundTint="#E91E63"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:cornerRadius="2dp" />
 
         </LinearLayout>
 
@@ -219,41 +258,53 @@
         <Button
             android:id="@+id/btnScreenMonitoringDemo"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="44dp"
             android:text="🖥️ DEMO: Rozpocznij Monitorowanie Ekranu"
-            android:layout_marginBottom="8dp"
+            android:layout_marginBottom="2dp"
             android:textStyle="bold"
-            android:backgroundTint="@color/warning" />
+            android:backgroundTint="#FF9800"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:cornerRadius="2dp" />
 
         <!-- TEXT TO SPEECH - Screen Reader -->
         <Button
             android:id="@+id/btnScreenReader"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="44dp"
             android:text="🔊 Screen Reader 3x (10s)"
-            android:layout_marginBottom="8dp"
+            android:layout_marginBottom="2dp"
             android:textStyle="bold"
-            android:backgroundTint="@color/info" />
+            android:backgroundTint="#3F51B5"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:cornerRadius="2dp" />
 
         <!-- SCREEN READER SETTINGS -->
         <Button
             android:id="@+id/btnScreenReaderSettings"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="44dp"
             android:text="⚙️ Ustawienia Screen Reader"
-            android:layout_marginBottom="8dp"
+            android:layout_marginBottom="2dp"
             android:textStyle="bold"
-            android:backgroundTint="@color/gray_600" />
+            android:backgroundTint="#607D8B"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:cornerRadius="2dp" />
 
         <!-- KEYWORD MONITORING -->
         <Button
             android:id="@+id/btnKeywordMonitoring"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="44dp"
             android:text="🔍 Monitor Słownika (10s)"
-            android:layout_marginBottom="8dp"
+            android:layout_marginBottom="2dp"
             android:textStyle="bold"
-            android:backgroundTint="@color/danger" />
+            android:backgroundTint="#D32F2F"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:cornerRadius="2dp" />
 
     </LinearLayout>
 
