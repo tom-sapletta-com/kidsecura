@@ -58,15 +58,17 @@
             android:text="📊 Ostatnie wydarzenia (wszystkie)"
             android:textStyle="bold"
             android:textSize="16sp"
-            android:layout_marginBottom="8dp" />
+            android:textColor="@color/white"
+            android:layout_marginBottom="2dp" />
 
         <ScrollView
             android:id="@+id/scrollViewRecentLogs"
             android:layout_width="match_parent"
-            android:layout_height="200dp"
+            android:layout_height="134dp"
+            android:layout_marginBottom="16dp"
             android:background="@color/gray_900"
             android:padding="8dp"
-            android:layout_marginBottom="16dp">
+            android:textColor="@color/white">
 
             <LinearLayout
                 android:id="@+id/layoutRecentLogs"
@@ -78,10 +80,11 @@
                     android:id="@+id/tvNoLogs"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@string/no_logs_yet"
-                    android:textSize="14sp"
-                    android:textColor="@color/white"
                     android:gravity="center"
+                    android:text="@string/no_logs_yet"
+                    android:textStyle="bold"
+                    android:textColor="@color/white"
+                    android:textSize="14sp"
                     android:visibility="visible" />
 
             </LinearLayout>
@@ -120,18 +123,53 @@
                 android:insetBottom="0dp" />
 
         </LinearLayout>
-        
-        <!-- Demo Row -->
+
+
+        <!-- Network Scanner Row -->
         <Button
-            android:id="@+id/btnDetectionDemo"
+            android:id="@+id/btnNetworkScanner"
             android:layout_width="match_parent"
             android:layout_height="38dp"
-            android:text="🎯 DEMO: Detekcja Słów Kluczowych"
+            android:text="🌐 Skanuj Sieć WiFi"
             android:layout_marginBottom="1dp"
             android:textStyle="bold"
             android:backgroundTint="#00BCD4"
             android:insetTop="0dp"
             android:insetBottom="0dp" />
+
+                        <!-- First buttons row -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="1dp">
+            <!-- Demo Row -->
+            <Button
+                android:id="@+id/btnDetectionDemo"
+                android:layout_width="match_parent"
+                android:layout_height="38dp"
+                android:layout_weight="1"
+                android:text="DEMO:DetSłówKl."
+                android:layout_marginBottom="1dp"
+                android:textStyle="bold"
+                android:backgroundTint="#00BCD4"
+                android:insetTop="0dp"
+                android:insetBottom="0dp" />
+
+
+            <!-- Analysis Settings button row -->
+            <Button
+                android:id="@+id/btnAnalysisSettings"
+                android:layout_width="match_parent"
+                android:layout_height="36dp"
+                android:layout_weight="1"
+                android:text="⚙️ Ust.Anal.Mon."
+                android:layout_marginBottom="-1dp"
+                android:textStyle="bold"
+                android:backgroundTint="#795546"
+                android:insetTop="-2dp"
+                android:insetBottom="-2dp" />
+        </LinearLayout>
 
         <!-- Second button row -->
         <LinearLayout
@@ -198,18 +236,7 @@
                 android:insetBottom="0dp" />
 
         </LinearLayout>
-        
-        <!-- Analysis Settings button row -->
-        <Button
-            android:id="@+id/btnAnalysisSettings"
-            android:layout_width="match_parent"
-            android:layout_height="38dp"
-            android:text="⚙️ Ustawienia Analizy i Monitoringu"
-            android:layout_marginBottom="1dp"
-            android:textStyle="bold"
-            android:backgroundTint="#795548"
-            android:insetTop="0dp"
-            android:insetBottom="0dp" />
+
 
         <!-- Fourth button row - STEALTH MODE -->
         <LinearLayout

@@ -101,6 +101,48 @@ class PairingService(private val context: Context) {
     }
     
     /**
+     * Uruchamia tylko serwer nasłuchujący (dla urządzenia DZIECKA)
+     * Nie próbuje łączyć się z innym urządzeniem
+     */
+    fun startListeningServer(callback: (success: Boolean, message: String?) -> Unit) {
+        serviceScope.launch {
+            try {
+                Log.d(TAG, "🎧 Starting listening server on port 8888...")
+                
+                // Zamknij poprzedni serwer jeśli istnieje
+                stopServer()
+                
+                // Poczekaj aby port został zwolniony
+                delay(300)
+                
+                // Uruchom serwer nasłuchujący
+                startServer()
+                
+                callback(true, "Server started on port 8888")
+                Log.d(TAG, "✅ Listening server started successfully")
+                
+            } catch (e: Exception) {
+                Log.e(TAG, "❌ Error starting listening server", e)
+                callback(false, "Server error: ${e.message}")
+            }
+        }
+    }
+    
+    /**
+     * Zatrzymuje serwer nasłuchujący
+     */
+    private fun stopServer() {
+        try {
+            serverJob?.cancel()
+            serverSocket?.close()
+            serverSocket = null
+            Log.d(TAG, "🛑 Server stopped")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error stopping server", e)
+        }
+    }
+    
+    /**
      * Rozpoczyna proces parowania z wykrytym urządzeniem
      */
     fun startPairing(
@@ -156,7 +198,7 @@ class PairingService(private val context: Context) {
             }
             
             // Sprawdź dostępność portu
-            val port = 8080
+            val port = 8888
             Log.d(TAG, "Attempting to bind to port: $port")
             
             try {
@@ -896,7 +938,7 @@ class PairingService(private val context: Context) {
             val ipAddress = getLocalIPAddress() ?: "127.0.0.1"
             
             // Port serwera
-            val port = 8080
+            val port = 8888
             
             // Wygeneruj lub pobierz klucz bezpieczeństwa
             val securityKey = getOrGenerateSecurityKey()
@@ -927,7 +969,7 @@ class PairingService(private val context: Context) {
                 deviceName = android.os.Build.MODEL ?: "Unknown Device",
                 deviceType = DeviceType.CHILD,
                 ipAddress = "127.0.0.1",
-                port = 8080,
+                port = 8888,
                 securityKey = "fallback_key",
                 pairingCode = "000000"
             )

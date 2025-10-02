@@ -30,6 +30,7 @@ import com.parentalcontrol.mvp.service.ScreenCaptureService
 import com.parentalcontrol.mvp.utils.PreferencesManager
 import com.parentalcontrol.mvp.utils.FileLogger
 import com.parentalcontrol.mvp.utils.SystemLogger
+import com.parentalcontrol.mvp.utils.NetworkScanner
 import com.parentalcontrol.mvp.messaging.MessagingIntegrationManager
 import java.io.File
 import java.text.SimpleDateFormat
@@ -185,6 +186,11 @@ class MainActivity : AppCompatActivity() {
                     systemLogger.logButtonClick("Keywords Tester", "MainActivity", false, e.message)
                     Toast.makeText(this@MainActivity, "Błąd Keywords Tester: ${e.message}", Toast.LENGTH_LONG).show()
                 }
+            }
+            
+            // Network Scanner - Skanowanie sieci WiFi
+            binding.btnNetworkScanner.setOnClickListener {
+                scanNetworkAndShowDevices()
             }
             
             // Detection Demo - Demonstracja wielojęzycznej detekcji
@@ -846,6 +852,157 @@ class MainActivity : AppCompatActivity() {
             "${wifiInfo.ssid} (${wifiInfo.ipAddress})"
         } catch (e: Exception) {
             "Niedostępne"
+        }
+    }
+    
+    /**
+     * Skanuje sieć WiFi i pokazuje wszystkie znalezione urządzenia
+     */
+    private fun scanNetworkAndShowDevices() {
+        try {
+            Log.d(TAG, "🌐 scanNetworkAndShowDevices() - Starting network scan")
+            
+            // Sprawdź WiFi
+            val wifiInfo = getWifiInfo()
+            if (wifiInfo == "Niedostępne") {
+                AlertDialog.Builder(this)
+                    .setTitle("❌ Brak WiFi")
+                    .setMessage("WiFi nie jest połączone. Połącz się z siecią WiFi aby skanować urządzenia.")
+                    .setPositiveButton("OK", null)
+                    .show()
+                return
+            }
+            
+            // Pokaż dialog progress
+            val progressDialog = AlertDialog.Builder(this)
+                .setTitle("🌐 Skanowanie Sieci WiFi")
+                .setMessage("Szukam urządzeń w sieci...\n\nMoże to potrwać do 30 sekund.")
+                .setCancelable(false)
+                .create()
+            
+            progressDialog.show()
+            
+            // Uruchom skanowanie w coroutine
+            lifecycleScope.launch {
+                try {
+                    val networkScanner = NetworkScanner(this@MainActivity)
+                    val devices = mutableListOf<NetworkScanner.NetworkDevice>()
+                    
+                    Log.d(TAG, "🔍 Starting quick network scan...")
+                    
+                    // Szybkie skanowanie z callback
+                    val foundDevices = networkScanner.quickScan { device ->
+                        Log.d(TAG, "📱 Found device: ${device.getDisplayName()}")
+                        devices.add(device)
+                    }
+                    
+                    progressDialog.dismiss()
+                    
+                    Log.d(TAG, "✅ Network scan completed: ${foundDevices.size} devices found")
+                    
+                    // Pokaż wyniki
+                    showNetworkScanResults(foundDevices, wifiInfo)
+                    
+                } catch (e: Exception) {
+                    progressDialog.dismiss()
+                    Log.e(TAG, "❌ Error during network scan", e)
+                    
+                    AlertDialog.Builder(this@MainActivity)
+                        .setTitle("❌ Błąd Skanowania")
+                        .setMessage("Nie udało się przeskanować sieci:\n${e.message}")
+                        .setPositiveButton("OK", null)
+                        .show()
+                }
+            }
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error in scanNetworkAndShowDevices", e)
+            Toast.makeText(this, "Błąd skanowania: ${e.message}", Toast.LENGTH_LONG).show()
+        }
+    }
+    
+    /**
+     * Pokazuje wyniki skanowania sieci
+     */
+    private fun showNetworkScanResults(devices: List<NetworkScanner.NetworkDevice>, wifiInfo: String) {
+        try {
+            val dialogView = ScrollView(this).apply {
+                setPadding(32, 32, 32, 32)
+            }
+            
+            val contentLayout = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+            }
+            
+            // Nagłówek
+            val headerText = TextView(this).apply {
+                text = "🌐 WYNIKI SKANOWANIA SIECI\n\n" +
+                       "📱 Twoja sieć: $wifiInfo\n" +
+                       "🔍 Znaleziono: ${devices.size} urządzeń\n\n" +
+                       "━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+                textSize = 14f
+                setTextIsSelectable(true)
+            }
+            contentLayout.addView(headerText)
+            
+            if (devices.isEmpty()) {
+                val noDevicesText = TextView(this).apply {
+                    text = "❌ Nie znaleziono żadnych urządzeń w sieci.\n\n" +
+                           "Możliwe przyczyny:\n" +
+                           "• Router blokuje skanowanie\n" +
+                           "• Firewall blokuje ICMP ping\n" +
+                           "• Urządzenia są w trybie uśpienia\n" +
+                           "• Timeout zbyt krótki (2s)"
+                    textSize = 12f
+                }
+                contentLayout.addView(noDevicesText)
+            } else {
+                // Lista urządzeń
+                devices.sortedBy { it.responseTime }.forEachIndexed { index, device ->
+                    val deviceText = TextView(this).apply {
+                        text = "📱 Urządzenie #${index + 1}\n" +
+                               "🌐 IP: ${device.ip}\n" +
+                               (if (device.hostname != null) "📝 Nazwa: ${device.hostname}\n" else "") +
+                               "⏱️ Czas odpowiedzi: ${device.responseTime}ms\n" +
+                               "🔌 Port 8888: ${if (device.hasPairingPort) "✅ OTWARTY" else "🔒 Zamknięty"}\n" +
+                               "━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                        textSize = 12f
+                        setTextIsSelectable(true)
+                        setPadding(0, 8, 0, 8)
+                    }
+                    contentLayout.addView(deviceText)
+                }
+                
+                // Podsumowanie
+                val pairingDevices = devices.count { it.hasPairingPort }
+                val summaryText = TextView(this).apply {
+                    text = "\n📊 PODSUMOWANIE:\n" +
+                           "• Wszystkich urządzeń: ${devices.size}\n" +
+                           "• Z otwartym portem 8888: $pairingDevices\n" +
+                           (if (pairingDevices > 0) "\n✅ Znaleziono urządzenia gotowe do parowania!" 
+                            else "\n⚠️ Brak urządzeń z otwartym portem parowania")
+                    textSize = 13f
+                    setTypeface(null, android.graphics.Typeface.BOLD)
+                }
+                contentLayout.addView(summaryText)
+            }
+            
+            dialogView.addView(contentLayout)
+            
+            AlertDialog.Builder(this)
+                .setTitle("🌐 Urządzenia w Sieci")
+                .setView(dialogView)
+                .setPositiveButton("OK", null)
+                .setNeutralButton("🔄 Skanuj Ponownie") { _, _ ->
+                    scanNetworkAndShowDevices()
+                }
+                .show()
+                
+            Log.d(TAG, "✅ Network scan results dialog shown")
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error showing network scan results", e)
+            Toast.makeText(this, "Błąd wyświetlania wyników: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
     

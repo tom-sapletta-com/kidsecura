@@ -20,7 +20,7 @@ class NetworkScanner(private val context: Context) {
     companion object {
         private const val TAG = "NetworkScanner"
         private const val SCAN_TIMEOUT = 2000 // ms - zwiększone z 500ms na 2s
-        private const val PAIRING_PORT = 8080 // Port używany do parowania
+        private const val PAIRING_PORT = 8888 // Port używany do parowania
         private const val MAX_PARALLEL_SCANS = 50 // Maksymalna liczba równoczesnych skanów
     }
     

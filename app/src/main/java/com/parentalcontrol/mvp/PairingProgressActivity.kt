@@ -72,7 +72,7 @@ class PairingProgressActivity : AppCompatActivity() {
         )
         pairingCode = intent.getStringExtra(EXTRA_PAIRING_CODE)
         remoteIp = intent.getStringExtra(EXTRA_REMOTE_IP)
-        remotePort = intent.getIntExtra(EXTRA_REMOTE_PORT, 8080)
+        remotePort = intent.getIntExtra(EXTRA_REMOTE_PORT, 8888)
         
         supportActionBar?.title = "Parowanie urządzeń"
         supportActionBar?.setDisplayHomeAsUpEnabled(true)

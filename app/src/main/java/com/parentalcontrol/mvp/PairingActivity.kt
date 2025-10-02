@@ -165,8 +165,81 @@ class PairingActivity : AppCompatActivity() {
     }
     
     private fun startPairingServer() {
-        // TODO: Zaimplementuj rozpoczęcie serwera parowania
-        Log.d(TAG, "Starting pairing server...")
+        // Tylko dla urządzenia DZIECKA - uruchom serwer nasłuchujący
+        if (deviceType != DeviceType.CHILD) {
+            Log.d(TAG, "Not a child device - server not needed")
+            return
+        }
+        
+        lifecycleScope.launch {
+            try {
+                Log.d(TAG, "🚀 Starting pairing server on port 8888 for CHILD device...")
+                
+                // Najpierw zatrzymaj ewentualny poprzedni serwer
+                pairingService.cleanup()
+                
+                // Poczekaj chwilę aby port został zwolniony
+                kotlinx.coroutines.delay(500)
+                
+                // Uruchom tylko serwer nasłuchujący (bez łączenia się z innym urządzeniem)
+                pairingService.startListeningServer { success, message ->
+                    runOnUiThread {
+                        if (success) {
+                            Log.d(TAG, "✅ Pairing server started successfully on port 8888")
+                            binding.statusText.text = "✅ Serwer uruchomiony - Port 8888 OTWARTY\nOczekiwanie na połączenie od rodzica..."
+                            Toast.makeText(this@PairingActivity, "✅ Port 8888 otwarty - gotowy do parowania!", Toast.LENGTH_LONG).show()
+                        } else {
+                            Log.e(TAG, "❌ Failed to start pairing server: $message")
+                            binding.statusText.text = "❌ Błąd serwera: $message"
+                            Toast.makeText(this@PairingActivity, "❌ Błąd: $message", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+                
+            } catch (e: Exception) {
+                Log.e(TAG, "❌ Error starting pairing server", e)
+                runOnUiThread {
+                    binding.statusText.text = "❌ Błąd uruchamiania serwera: ${e.message}"
+                    Toast.makeText(this@PairingActivity, "❌ Błąd serwera: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+    
+    private fun getLocalIpAddress(): String? {
+        try {
+            val wifiManager = applicationContext.getSystemService(android.content.Context.WIFI_SERVICE) as android.net.wifi.WifiManager
+            val wifiInfo = wifiManager.connectionInfo
+            val ipInt = wifiInfo.ipAddress
+            return String.format("%d.%d.%d.%d",
+                ipInt and 0xff,
+                ipInt shr 8 and 0xff,
+                ipInt shr 16 and 0xff,
+                ipInt shr 24 and 0xff)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error getting IP address", e)
+            return null
+        }
+    }
+    
+    private fun getWifiSSID(): String? {
+        return try {
+            val wifiManager = applicationContext.getSystemService(android.content.Context.WIFI_SERVICE) as android.net.wifi.WifiManager
+            wifiManager.connectionInfo.ssid?.replace("\"", "")
+        } catch (e: Exception) {
+            null
+        }
+    }
+    
+    private fun generatePairingCode(): String {
+        return (1000..9999).random().toString()
+    }
+    
+    private fun generateSecurityKey(): String {
+        val chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+        return (1..32)
+            .map { chars.random() }
+            .joinToString("")
     }
     
     private fun startQRScanner() {

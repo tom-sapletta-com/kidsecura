@@ -25,7 +25,7 @@ class QRCodeGenerator(private val context: Context) {
     companion object {
         private const val TAG = "QRCodeGenerator"
         private const val QR_CODE_SIZE = 512
-        private const val DEFAULT_PORT = 8080
+        private const val DEFAULT_PORT = 8888
         private const val PAIRING_CODE_LENGTH = 6
     }
     
