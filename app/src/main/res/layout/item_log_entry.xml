@@ -5,7 +5,8 @@
     android:layout_height="wrap_content"
     android:layout_margin="4dp"
     app:cardCornerRadius="8dp"
-    app:cardElevation="2dp">
+    app:cardElevation="2dp"
+    app:cardBackgroundColor="@color/gray_900">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -27,7 +28,7 @@
                 android:layout_width="4dp"
                 android:layout_height="24dp"
                 android:layout_marginEnd="8dp"
-                android:background="@color/md_theme_light_primary" />
+                android:background="@color/success" />
 
             <!-- Type text -->
             <TextView
@@ -37,7 +38,7 @@
                 android:text="ALERT"
                 android:textSize="12sp"
                 android:textStyle="bold"
-                android:textColor="@color/md_theme_light_primary"
+                android:textColor="@color/success_light"
                 android:layout_marginEnd="8dp" />
 
             <!-- Spacer -->
@@ -53,7 +54,7 @@
                 android:layout_height="wrap_content"
                 android:text="17:52:15"
                 android:textSize="12sp"
-                android:textColor="@color/text_secondary" />
+                android:textColor="@color/gray_400" />
 
         </LinearLayout>
 
@@ -64,7 +65,7 @@
             android:layout_height="wrap_content"
             android:text="Cyberprzemoc w WhatsApp"
             android:textSize="14sp"
-            android:textColor="@color/text_primary"
+            android:textColor="@color/white"
             android:layout_marginBottom="4dp" />
 
         <!-- Full content (expandable) -->
@@ -74,7 +75,7 @@
             android:layout_height="wrap_content"
             android:text="ALERT: Suspicious content detected..."
             android:textSize="12sp"
-            android:textColor="@color/text_secondary"
+            android:textColor="@color/gray_400"
             android:fontFamily="monospace"
             android:maxLines="3"
             android:ellipsize="end"
@@ -87,7 +88,7 @@
             android:layout_height="wrap_content"
             android:text="@string/show_details"
             android:textSize="12sp"
-            android:textColor="@color/md_theme_light_primary"
+            android:textColor="@color/info_light"
             android:textStyle="bold"
             android:layout_marginTop="4dp"
             android:clickable="true"

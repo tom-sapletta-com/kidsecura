@@ -64,7 +64,7 @@
             android:id="@+id/scrollViewRecentLogs"
             android:layout_width="match_parent"
             android:layout_height="200dp"
-            android:background="@drawable/log_preview_background"
+            android:background="@color/gray_900"
             android:padding="8dp"
             android:layout_marginBottom="16dp">
 
@@ -80,7 +80,7 @@
                     android:layout_height="wrap_content"
                     android:text="@string/no_logs_yet"
                     android:textSize="14sp"
-                    android:textColor="@color/text_secondary"
+                    android:textColor="@color/gray_400"
                     android:gravity="center"
                     android:visibility="visible" />
 

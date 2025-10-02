@@ -57,7 +57,44 @@
                 android:layout_height="wrap_content"
                 android:max="100"
                 android:progress="0"
-                android:progressTint="@color/purple_500" />
+                android:progressTint="@color/pairing_progress" />
+
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Devices Section -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cardDevices"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="4dp"
+        android:layout_marginBottom="16dp"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="📱 Wykryte urządzenia w sieci:"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="@color/md_theme_light_onSurface"
+                android:padding="12dp"
+                android:background="@color/network_scanning" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recyclerDevices"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:maxHeight="150dp"
+                android:padding="8dp"
+                android:scrollbars="vertical" />
 
         </LinearLayout>
 
@@ -85,7 +122,7 @@
                 android:textStyle="bold"
                 android:textColor="@color/md_theme_light_onSurface"
                 android:padding="12dp"
-                android:background="@color/purple_200" />
+                android:background="@color/md_theme_light_primary" />
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/recyclerLogs"
