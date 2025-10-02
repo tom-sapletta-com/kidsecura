@@ -194,6 +194,13 @@
             android:theme="@style/Theme.ParentalControl.NoActionBar"
             android:parentActivityName=".MainActivity" />
 
+        <activity
+            android:name=".AnalysisSettingsActivity"
+            android:exported="false"
+            android:label="Ustawienia Analizy"
+            android:theme="@style/Theme.ParentalControl"
+            android:parentActivityName=".MainActivity" />
+
         <service
             android:name=".service.ScreenCaptureService"
             android:enabled="true"

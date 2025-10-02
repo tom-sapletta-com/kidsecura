@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp"
+    android:background="@android:color/white">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- SECTION: Screen Capture Settings -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="📸 Ustawienia Przechwytywania Ekranu"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:padding="8dp"
+            android:background="@color/purple_200"
+            android:textColor="@android:color/white"
+            android:layout_marginBottom="12dp"/>
+
+        <!-- Capture Interval -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Interwał przechwytywania:"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:layout_marginTop="8dp"/>
+
+        <TextView
+            android:id="@+id/tvIntervalValue"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="5 sekund"
+            android:textSize="16sp"
+            android:textColor="@color/purple_500"
+            android:gravity="center"
+            android:padding="8dp"/>
+
+        <SeekBar
+            android:id="@+id/seekBarCaptureInterval"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:min="1"
+            android:max="30"
+            android:progress="5"/>
+
+        <!-- Capture Options -->
+        <Switch
+            android:id="@+id/switchCropBottom"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Przytnij dolny pasek nawigacji"
+            android:padding="12dp"
+            android:layout_marginTop="8dp"/>
+
+        <Switch
+            android:id="@+id/switchLocalAnalysis"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Włącz lokalną analizę OCR"
+            android:padding="12dp"/>
+
+        <Switch
+            android:id="@+id/switchSaveScreenshots"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Zapisuj zrzuty ekranu"
+            android:padding="12dp"/>
+
+        <Switch
+            android:id="@+id/switchFullScreenDetection"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="🔍 Wykrywanie na całym ekranie (wszystkie aplikacje)"
+            android:padding="12dp"
+            android:textStyle="bold"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Gdy włączone, aplikacja będzie analizować cały ekran we wszystkich aplikacjach"
+            android:textSize="12sp"
+            android:textColor="@android:color/darker_gray"
+            android:padding="8dp"
+            android:layout_marginBottom="16dp"/>
+
+        <!-- SECTION: Location & Screen Time -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="📍 Lokalizacja i Czas Ekranowy"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:padding="8dp"
+            android:background="@color/teal_200"
+            android:textColor="@android:color/white"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="12dp"/>
+
+        <Switch
+            android:id="@+id/switchLocationTracking"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="📍 Śledź lokalizację dziecka"
+            android:padding="12dp"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Lokalizacja będzie wysyłana do telefonu rodzica razem z alertami"
+            android:textSize="12sp"
+            android:textColor="@android:color/darker_gray"
+            android:padding="8dp"
+            android:layout_marginBottom="8dp"/>
+
+        <Switch
+            android:id="@+id/switchScreenTimeTracking"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="⏱️ Śledź czas ekranowy"
+            android:padding="12dp"/>
+
+        <TextView
+            android:id="@+id/tvScreenTimeToday"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Czas dziś: 0h 0min"
+            android:textSize="16sp"
+            android:textColor="@color/purple_500"
+            android:textStyle="bold"
+            android:padding="12dp"
+            android:gravity="center"
+            android:background="#F0F0F0"
+            android:layout_marginBottom="16dp"/>
+
+        <!-- SECTION: Debug & Logging -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="🐛 Debugowanie i Logowanie"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:padding="8dp"
+            android:background="@color/design_default_color_error"
+            android:textColor="@android:color/white"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="12dp"/>
+
+        <Switch
+            android:id="@+id/switchDebugNotifications"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="🔔 Powiadomienia debugowania w czasie rzeczywistym"
+            android:padding="12dp"
+            android:textStyle="bold"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="UWAGA: Włączenie pokaże powiadomienie gdy słowo kluczowe zostanie wykryte. Użyj do testowania czy detekcja działa poprawnie."
+            android:textSize="12sp"
+            android:textColor="@color/design_default_color_error"
+            android:padding="8dp"
+            android:layout_marginBottom="8dp"/>
+
+        <Switch
+            android:id="@+id/switchVerboseLogging"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="📝 Szczegółowe logowanie"
+            android:padding="12dp"/>
+
+        <TextView
+            android:id="@+id/tvLogCount"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Zapisanych logów: 0"
+            android:textSize="14sp"
+            android:padding="12dp"
+            android:gravity="center"
+            android:background="#F0F0F0"
+            android:layout_marginBottom="16dp"/>
+
+        <!-- SECTION: Child Session Management -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="👶 Zarządzanie Sesją Dziecka"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:padding="8dp"
+            android:background="@color/design_default_color_primary"
+            android:textColor="@android:color/white"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="12dp"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Możesz tymczasowo wyłączyć monitoring, aby dziecko mogło korzystać z telefonu bez ograniczeń (np. podczas odrabiania lekcji)."
+            android:textSize="13sp"
+            android:padding="8dp"
+            android:layout_marginBottom="8dp"/>
+
+        <TextView
+            android:id="@+id/tvSessionStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="🔒 Sesja zablokowana - monitoring aktywny"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:padding="16dp"
+            android:gravity="center"
+            android:background="#FFE0E0"
+            android:layout_marginBottom="12dp"/>
+
+        <Button
+            android:id="@+id/btnUnlockSession"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Odblokuj Sesję dla Dziecka"
+            android:padding="16dp"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="24dp"/>
+
+        <!-- Info Footer -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="ℹ️ Wszystkie ustawienia są zapisywane automatycznie"
+            android:textSize="12sp"
+            android:textStyle="italic"
+            android:gravity="center"
+            android:padding="16dp"
+            android:textColor="@android:color/darker_gray"/>
+
+    </LinearLayout>
+</ScrollView>

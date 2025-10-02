@@ -54,6 +54,10 @@ class KeywordsTesterActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_keywords_tester)
         
+        // Enable back button in action bar with custom icon
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.title = "🔍 Tester Słów Kluczowych"
+        
         systemLogger = SystemLogger(this)
         preferencesManager = PreferencesManager(this)
         
@@ -67,6 +71,17 @@ class KeywordsTesterActivity : AppCompatActivity() {
         // Show sample test text
         testInput.setText("Przykładowy tekst do testowania wykrywania słów kluczowych...")
         performThreatAnalysis()
+    }
+    
+    override fun onOptionsItemSelected(item: android.view.MenuItem): Boolean {
+        return when (item.itemId) {
+            android.R.id.home -> {
+                // Navigate back to MainActivity
+                finish()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
     }
     
     private fun initializeViews() {

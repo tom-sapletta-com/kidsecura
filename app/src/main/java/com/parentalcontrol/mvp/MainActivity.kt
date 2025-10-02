@@ -293,6 +293,22 @@ class MainActivity : AppCompatActivity() {
                     Toast.makeText(this@MainActivity, "Błąd konfiguracji alertów: ${e.message}", Toast.LENGTH_LONG).show()
                 }
             }
+            
+            // ANALYSIS SETTINGS
+            Log.d(TAG, "⚙️ Setting up Analysis Settings button")
+            btnAnalysisSettings.setOnClickListener {
+                try {
+                    Log.d(TAG, "⚙️ btnAnalysisSettings clicked - Opening AnalysisSettingsActivity")
+                    systemLogger.logButtonClick("Ustawienia Analizy", "MainActivity", true)
+                    val intent = Intent(this@MainActivity, AnalysisSettingsActivity::class.java)
+                    startActivity(intent)
+                    Log.d(TAG, "✅ AnalysisSettingsActivity opened successfully")
+                } catch (e: Exception) {
+                    Log.e(TAG, "❌ BŁĄD podczas otwierania AnalysisSettingsActivity", e)
+                    systemLogger.logButtonClick("Ustawienia Analizy", "MainActivity", false, e.message)
+                    Toast.makeText(this@MainActivity, "Błąd Ustawień Analizy: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+            }
         }
         
         Log.d(TAG, "✅ setupUI() - COMPLETED SUCCESSFULLY")

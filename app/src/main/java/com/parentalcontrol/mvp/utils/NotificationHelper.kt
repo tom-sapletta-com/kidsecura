@@ -18,12 +18,16 @@ class NotificationHelper(private val context: Context) {
     
     companion object {
         private const val CHANNEL_ID_ALERTS = "alerts_channel"
+        private const val CHANNEL_ID_DEBUG = "debug_channel"
         private const val NOTIFICATION_ID_BASE = 1000
+        private const val NOTIFICATION_ID_DEBUG_BASE = 5000
         private var notificationIdCounter = NOTIFICATION_ID_BASE
+        private var debugNotificationIdCounter = NOTIFICATION_ID_DEBUG_BASE
     }
     
     init {
         createAlertChannel()
+        createDebugChannel()
     }
     
     private fun createAlertChannel() {
@@ -35,6 +39,23 @@ class NotificationHelper(private val context: Context) {
             ).apply {
                 description = "Powiadomienia o wykrytych zagrożeniach"
                 enableVibration(true)
+                enableLights(true)
+            }
+            
+            val notificationManager = context.getSystemService(NotificationManager::class.java)
+            notificationManager.createNotificationChannel(channel)
+        }
+    }
+    
+    private fun createDebugChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                CHANNEL_ID_DEBUG,
+                "Powiadomienia Debugowania",
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply {
+                description = "Powiadomienia o wykrytych słowach kluczowych w czasie rzeczywistym (tylko dla debugowania)"
+                enableVibration(false)
                 enableLights(true)
             }
             
@@ -82,6 +103,47 @@ class NotificationHelper(private val context: Context) {
             } else {
                 // Na starszych wersjach Androida nie ma potrzeby sprawdzania uprawnień
                 notify(notificationIdCounter++, notification)
+            }
+        }
+    }
+    
+    /**
+     * Wysyła powiadomienie debugowania o wykrytym słowie kluczowym
+     * Używane tylko gdy debug notifications są włączone
+     */
+    fun showDebugNotification(title: String, message: String) {
+        val intent = Intent(context, EventHistoryActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            0,
+            intent,
+            PendingIntent.FLAG_IMMUTABLE
+        )
+        
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID_DEBUG)
+            .setSmallIcon(R.drawable.ic_warning)
+            .setContentTitle(title)
+            .setContentText(message)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(message))
+            .build()
+        
+        with(NotificationManagerCompat.from(context)) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                if (ContextCompat.checkSelfPermission(
+                        context,
+                        Manifest.permission.POST_NOTIFICATIONS
+                    ) == PackageManager.PERMISSION_GRANTED
+                ) {
+                    notify(debugNotificationIdCounter++, notification)
+                }
+            } else {
+                notify(debugNotificationIdCounter++, notification)
             }
         }
     }

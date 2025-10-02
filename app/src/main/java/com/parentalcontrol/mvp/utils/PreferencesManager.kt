@@ -161,4 +161,50 @@ class PreferencesManager(context: Context) {
     // Message priority threshold
     fun getMessagePriorityThreshold(): Int = prefs.getInt(KEY_MESSAGE_PRIORITY_THRESHOLD, 2) // Default to MEDIUM priority
     fun setMessagePriorityThreshold(threshold: Int) = prefs.edit().putInt(KEY_MESSAGE_PRIORITY_THRESHOLD, threshold).apply()
+    
+    // Generic helpers for new settings
+    fun getBoolean(key: String, defaultValue: Boolean = false): Boolean = prefs.getBoolean(key, defaultValue)
+    fun setBoolean(key: String, value: Boolean) = prefs.edit().putBoolean(key, value).apply()
+    
+    fun getInt(key: String, defaultValue: Int = 0): Int = prefs.getInt(key, defaultValue)
+    fun setInt(key: String, value: Int) = prefs.edit().putInt(key, value).apply()
+    
+    fun getLong(key: String, defaultValue: Long = 0L): Long = prefs.getLong(key, defaultValue)
+    fun setLong(key: String, value: Long) = prefs.edit().putLong(key, value).apply()
+    
+    fun getString(key: String, defaultValue: String? = null): String? = prefs.getString(key, defaultValue)
+    fun setString(key: String, value: String?) = prefs.edit().putString(key, value).apply()
+    
+    // Initialize default values for new settings
+    fun initializeDefaultSettings() {
+        val editor = prefs.edit()
+        
+        // Set full screen detection to enabled by default
+        if (!prefs.contains("full_screen_detection")) {
+            editor.putBoolean("full_screen_detection", true)
+        }
+        
+        // Enable screen time tracking by default
+        if (!prefs.contains("screen_time_tracking_enabled")) {
+            editor.putBoolean("screen_time_tracking_enabled", true)
+        }
+        
+        // Enable verbose logging by default
+        if (!prefs.contains("verbose_logging_enabled")) {
+            editor.putBoolean("verbose_logging_enabled", true)
+        }
+        
+        // Initialize log counter
+        if (!prefs.contains("total_log_count")) {
+            editor.putInt("total_log_count", 0)
+        }
+        
+        editor.apply()
+    }
+    
+    // Increment log counter
+    fun incrementLogCount() {
+        val currentCount = getInt("total_log_count", 0)
+        setInt("total_log_count", currentCount + 1)
+    }
 }

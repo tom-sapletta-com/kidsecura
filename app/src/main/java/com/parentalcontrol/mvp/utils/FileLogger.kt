@@ -128,6 +128,91 @@ class FileLogger(private val context: Context) {
     }
     
     /**
+     * Zapisuje szczegółowy log dla debugowania
+     */
+    suspend fun logDebug(tag: String, message: String, includeTimestamp: Boolean = true) {
+        val prefsManager = PreferencesManager(context)
+        if (prefsManager.getBoolean("verbose_logging_enabled", true)) {
+            val logMsg = if (includeTimestamp) {
+                "DEBUG [$tag]: $message"
+            } else {
+                "DEBUG: $message"
+            }
+            log(logMsg)
+            prefsManager.incrementLogCount()
+        }
+    }
+    
+    /**
+     * Zapisuje wykrycie słowa kluczowego
+     */
+    suspend fun logKeywordDetection(
+        keyword: String,
+        context: String,
+        appName: String,
+        timestamp: Long = System.currentTimeMillis()
+    ) {
+        val logMessage = buildString {
+            append("🔍 KEYWORD DETECTED\n")
+            append("  Keyword: '$keyword'\n")
+            append("  Context: ${context.take(100)}\n")
+            append("  App: $appName\n")
+            append("  Time: ${dateFormat.format(Date(timestamp))}")
+        }
+        log(logMessage)
+        
+        val prefsManager = PreferencesManager(context)
+        prefsManager.incrementLogCount()
+        
+        // Send debug notification if enabled
+        if (prefsManager.getBoolean("debug_notifications_enabled", false)) {
+            sendDebugNotification(keyword, appName)
+        }
+    }
+    
+    /**
+     * Wysyła powiadomienie debugowania
+     */
+    private fun sendDebugNotification(keyword: String, appName: String) {
+        try {
+            val notificationHelper = NotificationHelper(context)
+            notificationHelper.showDebugNotification(
+                "🔍 Wykryto: '$keyword'",
+                "W aplikacji: $appName"
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "Error sending debug notification", e)
+        }
+    }
+    
+    /**
+     * Zapisuje informację o lokalizacji
+     */
+    suspend fun logLocation(latitude: Double, longitude: Double, accuracy: Float) {
+        log("📍 LOCATION: Lat=$latitude, Lon=$longitude, Accuracy=${accuracy}m")
+    }
+    
+    /**
+     * Zapisuje czas ekranowy
+     */
+    suspend fun logScreenTime(durationMs: Long, appName: String) {
+        val minutes = durationMs / (1000 * 60)
+        log("⏱️ SCREEN_TIME: $appName - ${minutes}min")
+    }
+    
+    /**
+     * Zapisuje zdarzenie sesji dziecka
+     */
+    suspend fun logChildSession(action: String, durationMinutes: Int = 0) {
+        val msg = if (durationMinutes > 0) {
+            "👶 CHILD_SESSION: $action (Duration: ${durationMinutes}min)"
+        } else {
+            "👶 CHILD_SESSION: $action"
+        }
+        log(msg)
+    }
+    
+    /**
      * Rotuje plik logu jeśli jest za duży
      */
     private fun rotateLogFile(logFile: File) {

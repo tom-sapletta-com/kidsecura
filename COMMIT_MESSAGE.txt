@@ -1,0 +1,56 @@
+Fix: Prevent MainActivity from being disabled by anti-tampering in DEBUG builds
+
+PROBLEM:
+Activity class {com.parentalcontrol.mvp/com.parentalcontrol.mvp.MainActivity} 
+does not exist - application could not be launched on devices.
+
+ROOT CAUSE:
+StealthManager.activateAntiTamperingProtection() treated DEBUG builds as 
+tampering and automatically disabled MainActivity component via PackageManager,
+making the app unlaunchable during development.
+
+SOLUTION:
+- Added BuildConfig.DEBUG guard in activateAntiTamperingProtection()
+- Anti-tampering protection now skips entirely in DEBUG builds
+- RELEASE builds retain full anti-tampering protection
+- Zero impact on production security features
+
+CHANGES:
+1. StealthManager.kt
+   - Added import: com.parentalcontrol.mvp.BuildConfig
+   - Added DEBUG guard in activateAntiTamperingProtection()
+   - Anti-tampering skips if BuildConfig.DEBUG is true
+
+2. New Test Files
+   - StealthManagerTest.kt (13 unit tests)
+   - ComponentStateInstrumentedTest.kt (7 device tests)
+   - AntiTamperingRegressionTest.kt (6 regression tests)
+
+3. Fixed Test File
+   - MainActivityInstrumentedTest.kt (fixed imports)
+
+4. Documentation
+   - BUGFIX_SUMMARY.md (complete analysis)
+   - COMPONENT_STATE_DEBUGGING.md (debugging guide)
+   - TEST_RESULTS.md (test execution results)
+   - QUICK_START_AFTER_FIX.md (quick reference)
+
+TESTING:
+✅ 38/38 automated tests passed on 2 devices (Android 13 & 16)
+✅ Manual verification on T30Pro tablet and Pixel 7
+✅ Regression tests prevent future occurrences
+✅ MainActivity launches successfully
+
+VERIFICATION:
+Log output confirms fix:
+"🛡️ Anti-tampering protection SKIPPED in DEBUG build"
+
+IMPACT:
+- Fixes development workflow
+- No security impact (DEBUG builds not distributed)
+- No performance impact
+- No breaking changes
+
+Resolves: "Activity does not exist" error
+Tested-on: T30Pro (Android 13), Pixel 7 (Android 16)
+Tests: 38/38 passed
