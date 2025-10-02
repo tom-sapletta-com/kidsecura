@@ -50,12 +50,12 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <!-- Recent Logs Preview Section -->
+        <!-- Recent Logs Preview Section - Wszystkie logi (monitoring + system) -->
         <TextView
             android:id="@+id/tvRecentLogsTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/recent_logs_title"
+            android:text="📊 Ostatnie wydarzenia (wszystkie)"
             android:textStyle="bold"
             android:textSize="16sp"
             android:layout_marginBottom="8dp" />
@@ -63,7 +63,7 @@
         <ScrollView
             android:id="@+id/scrollViewRecentLogs"
             android:layout_width="match_parent"
-            android:layout_height="120dp"
+            android:layout_height="200dp"
             android:background="@drawable/log_preview_background"
             android:padding="8dp"
             android:layout_marginBottom="16dp">

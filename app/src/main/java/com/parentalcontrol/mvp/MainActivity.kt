@@ -581,49 +581,103 @@ class MainActivity : AppCompatActivity() {
     }
     
     /**
-     * Ładuje 3 najnowsze logi z pliku używając tej samej lokalizacji co FileLogger
+     * Ładuje najnowsze logi z WSZYSTKICH źródeł (monitoring + system)
+     * Zapewnia transparentność działania aplikacji
      */
     private suspend fun loadRecentLogs(): List<String> = withContext(Dispatchers.IO) {
         try {
-            // Używamy tej samej ścieżki co FileLogger: Downloads/KidSecura/
-            val logDir = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS)
-            val kidsecuraDir = File(logDir, "KidSecura")
+            val allLogs = mutableListOf<LogEntry>()
             
-            if (!kidsecuraDir.exists()) {
-                Log.d("MainActivity", "Log directory does not exist: ${kidsecuraDir.absolutePath}")
+            // 1. Załaduj logi monitorowania (monitoring_log_*)
+            val downloadsDir = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS)
+            val kidsecuraDownloads = File(downloadsDir, "KidSecura")
+            
+            if (kidsecuraDownloads.exists()) {
+                val monitoringFiles = kidsecuraDownloads.listFiles { file ->
+                    file.name.startsWith("monitoring_log_") && file.name.endsWith(".txt")
+                }?.sortedByDescending { it.lastModified() }?.take(2) // 2 najnowsze pliki
+                
+                monitoringFiles?.forEach { file ->
+                    try {
+                        file.readLines().forEach { line ->
+                            if (line.isNotBlank()) {
+                                val timestamp = extractTimestamp(line)
+                                allLogs.add(LogEntry(timestamp, line, "MONITORING"))
+                            }
+                        }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Error reading monitoring log: ${file.name}", e)
+                    }
+                }
+            }
+            
+            // 2. Załaduj logi systemowe (system_log_*) 
+            val systemLogDir = File(getExternalFilesDir(null), "KidSecura")
+            
+            if (systemLogDir.exists()) {
+                val systemFiles = systemLogDir.listFiles { file ->
+                    file.name.startsWith("system_log_") && file.name.endsWith(".txt")
+                }?.sortedByDescending { it.lastModified() }?.take(2) // 2 najnowsze pliki
+                
+                systemFiles?.forEach { file ->
+                    try {
+                        file.readLines().forEach { line ->
+                            if (line.isNotBlank()) {
+                                val timestamp = extractTimestamp(line)
+                                allLogs.add(LogEntry(timestamp, line, "SYSTEM"))
+                            }
+                        }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Error reading system log: ${file.name}", e)
+                    }
+                }
+            }
+            
+            if (allLogs.isEmpty()) {
+                Log.d(TAG, "No logs found in either monitoring or system directories")
                 return@withContext emptyList()
             }
             
-            // Znajdź najnowszy plik logu (monitoring_log_YYYY-MM-DD.txt)
-            val logFiles = kidsecuraDir.listFiles { file ->
-                file.name.startsWith("monitoring_log_") && file.name.endsWith(".txt")
-            }?.sortedByDescending { it.lastModified() }
+            // 3. Posortuj chronologicznie i weź 10 najnowszych
+            val recentLogs = allLogs
+                .sortedByDescending { it.timestamp }
+                .take(10)
+                .map { formatLogLine(it.line) }
             
-            if (logFiles.isNullOrEmpty()) {
-                Log.d("MainActivity", "No log files found in: ${kidsecuraDir.absolutePath}")
-                return@withContext emptyList()
-            }
+            Log.d(TAG, "📊 Loaded ${recentLogs.size} combined log entries (${allLogs.size} total available)")
             
-            val mostRecentLogFile = logFiles.first()
-            Log.d("MainActivity", "Reading from log file: ${mostRecentLogFile.absolutePath}")
-            
-            if (!mostRecentLogFile.exists()) {
-                return@withContext emptyList()
-            }
-            
-            val lines = mostRecentLogFile.readLines()
-            val recentLogs = lines.takeLast(3).reversed() // 3 najnowsze, od najnowszego
-            
-            Log.d("MainActivity", "Loaded ${recentLogs.size} recent log entries")
-            
-            // Formatuj logi dla wyświetlenia
-            recentLogs.map { line ->
-                formatLogLine(line)
-            }
+            recentLogs
             
         } catch (e: Exception) {
-            Log.e("MainActivity", "Error loading logs", e)
+            Log.e(TAG, "❌ Error loading combined logs", e)
             emptyList()
+        }
+    }
+    
+    /**
+     * Klasa pomocnicza dla logów z timestamp
+     */
+    private data class LogEntry(
+        val timestamp: Long,
+        val line: String,
+        val source: String
+    )
+    
+    /**
+     * Wyciąga timestamp z linii loga
+     */
+    private fun extractTimestamp(line: String): Long {
+        return try {
+            // Format: [yyyy-MM-dd HH:mm:ss.SSS] lub [yyyy-MM-dd HH:mm:ss]
+            val timestampStr = line.substringAfter("[").substringBefore("]")
+            val format = if (timestampStr.contains(".")) {
+                SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.getDefault())
+            } else {
+                SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+            }
+            format.parse(timestampStr)?.time ?: 0L
+        } catch (e: Exception) {
+            0L // Jeśli nie można sparsować, daj najniższy priorytet
         }
     }
     

@@ -61,6 +61,7 @@ class PairingService(private val context: Context) {
     private val prefs: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     private val gson = Gson()
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    private val systemLogger = com.parentalcontrol.mvp.utils.SystemLogger.getInstance(context)
     
     private var serverSocket: ServerSocket? = null
     private var clientSocket: Socket? = null
@@ -1620,5 +1621,21 @@ class PairingService(private val context: Context) {
             
             Log.d(TAG, "💓 Enhanced heartbeat stopped")
         }
+    }
+    
+    /**
+     * Loguje błąd zarówno do logcat jak i do system log (widoczne w MainActivity)
+     */
+    private fun logError(message: String, throwable: Throwable? = null) {
+        Log.e(TAG, message, throwable)
+        systemLogger.e(TAG, message, throwable)
+    }
+    
+    /**
+     * Loguje informację zarówno do logcat jak i do system log
+     */
+    private fun logInfo(message: String) {
+        Log.i(TAG, message)
+        systemLogger.i(TAG, message)
     }
 }
