@@ -112,14 +112,14 @@
             android:layout_weight="1"
             android:text="@string/loading_logs"
             android:textSize="12sp"
-            android:textColor="@color/gray_400" />
+            android:textColor="@color/white" />
 
         <TextView
             android:id="@+id/tvLastUpdate"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textSize="12sp"
-            android:textColor="@color/gray_400" />
+            android:textColor="@color/white" />
 
     </LinearLayout>
 

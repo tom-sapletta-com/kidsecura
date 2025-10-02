@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.media.projection.MediaProjectionManager
+import android.net.wifi.WifiManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -15,6 +16,7 @@ import android.widget.Toast
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Button
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -167,7 +169,7 @@ class MainActivity : AppCompatActivity() {
             
             // Podgląd logów
             btnViewLogs.setOnClickListener {
-                startActivity(Intent(this@MainActivity, LogViewerActivity::class.java))
+                showDiagnosticDialog()
             }
             
             // Keywords Tester - Interaktywny tester słów kluczowych
@@ -769,6 +771,81 @@ class MainActivity : AppCompatActivity() {
         } catch (e: Exception) {
             Log.e(TAG, "❌ Error stopping keyword monitoring", e)
             Toast.makeText(this, "Błąd zatrzymywania monitora: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+    
+    /**
+     * Pokazuje prosty dialog diagnostyczny z logami i statusem serwisów
+     */
+    private fun showDiagnosticDialog() {
+        try {
+            Log.d(TAG, "🔧 showDiagnosticDialog() - Opening diagnostic info")
+            
+            val dialogView = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(32, 32, 32, 32)
+            }
+            
+            // Status serwisów
+            val statusText = TextView(this).apply {
+                text = "🔧 DIAGNOSTYKA SERWISÓW\n\n" +
+                        "KeywordMonitor: ${if (com.parentalcontrol.mvp.service.KeywordMonitorService.isRunning) "🟢 AKTYWNY" else "🔴 NIEAKTYWNY"}\n" +
+                        "ScreenReader: ${if (com.parentalcontrol.mvp.service.ScreenReaderService.isRunning) "🟢 AKTYWNY" else "🔴 NIEAKTYWNY"}\n\n" +
+                        "📱 Network Info:\n" +
+                        "WiFi: ${getWifiInfo()}\n\n" +
+                        "📋 Recent FileLogger Entries:"
+                textSize = 12f
+                setTextIsSelectable(true)
+            }
+            
+            dialogView.addView(statusText)
+            
+            // Przycisk do pełnych logów
+            val btnFullLogs = Button(this).apply {
+                text = "📋 Otwórz Pełne Logi"
+                setOnClickListener {
+                    startActivity(Intent(this@MainActivity, LogViewerActivity::class.java))
+                }
+            }
+            
+            // Przycisk do wymuś refresh logów
+            val btnRefreshLogs = Button(this).apply {
+                text = "🔄 Odśwież Logi"
+                setOnClickListener {
+                    // Wymuś logowanie diagnostyczne
+                    systemLogger.i(TAG, "🔧 DIAGNOSTIC: Manual log refresh triggered")
+                    lifecycleScope.launch {
+                        fileLogger.logServiceEvent("🔧 DIAGNOSTIC: Manual refresh at ${System.currentTimeMillis()}")
+                    }
+                    Toast.makeText(this@MainActivity, "Logi odświeżone", Toast.LENGTH_SHORT).show()
+                }
+            }
+            
+            dialogView.addView(btnFullLogs)
+            dialogView.addView(btnRefreshLogs)
+            
+            AlertDialog.Builder(this)
+                .setTitle("🔧 Diagnostyka Systemu")
+                .setView(dialogView)
+                .setPositiveButton("OK", null)
+                .show()
+                
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error in showDiagnosticDialog", e)
+            Toast.makeText(this, "Błąd diagnostyki: ${e.message}", Toast.LENGTH_LONG).show()
+        }
+    }
+    
+    /**
+     * Pobiera informacje o WiFi
+     */
+    private fun getWifiInfo(): String {
+        return try {
+            val wifiManager = applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+            val wifiInfo = wifiManager.connectionInfo
+            "${wifiInfo.ssid} (${wifiInfo.ipAddress})"
+        } catch (e: Exception) {
+            "Niedostępne"
         }
     }
     

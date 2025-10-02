@@ -81,8 +81,9 @@ class KeywordMonitorService : Service() {
         super.onCreate()
         Log.d(TAG, "🔍 KeywordMonitorService onCreate")
         
-        // Inicjalizacja MediaProjectionManager
-        mediaProjectionManager = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
+        try {
+            // Inicjalizacja MediaProjectionManager
+            mediaProjectionManager = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
         
         // Inicjalizacja ML Kit Text Recognition
         val options = TextRecognizerOptions.Builder().build()
@@ -102,17 +103,31 @@ class KeywordMonitorService : Service() {
         screenHeight = metrics.heightPixels
         screenDensity = metrics.densityDpi
         
-        sessionStartTime = System.currentTimeMillis()
-        isRunning = true
-        
-        // Loguj start serwisu
-        serviceScope.launch {
-            fileLogger.logServiceEvent("🔍 KeywordMonitorService started - monitoring for dangerous keywords")
+            sessionStartTime = System.currentTimeMillis()
+            isRunning = true
+            
+            Log.d(TAG, "✅ KeywordMonitorService onCreate completed successfully")
+            
+            // Loguj start serwisu
+            serviceScope.launch {
+                fileLogger.logServiceEvent("🔍 KeywordMonitorService started - monitoring for dangerous keywords")
+                fileLogger.logServiceEvent("🔧 Service initialized: screen ${screenWidth}x${screenHeight}, density: $screenDensity")
+            }
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error in KeywordMonitorService onCreate", e)
+            serviceScope.launch {
+                fileLogger.logServiceEvent("❌ CRITICAL ERROR in KeywordMonitor onCreate: ${e.message}")
+            }
         }
     }
     
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d(TAG, "🔍 KeywordMonitorService onStartCommand")
+        
+        serviceScope.launch {
+            fileLogger.logServiceEvent("🎬 KeywordMonitorService onStartCommand called")
+        }
         
         if (intent != null) {
             resultCode = intent.getIntExtra("RESULT_CODE", 0)
@@ -120,11 +135,41 @@ class KeywordMonitorService : Service() {
             monitorInterval = intent.getIntExtra("MONITOR_INTERVAL", 10)
             autoStopDuration = intent.getIntExtra("AUTO_STOP_DURATION", 60)
             
-            startForeground(NOTIFICATION_ID, createNotification())
-            startScreenCapture()
+            Log.d(TAG, "🔧 Service params: interval=${monitorInterval}s, autoStop=${autoStopDuration}s, resultCode=$resultCode")
             
-            // Auto-stop po określonym czasie
-            startAutoStopTimer()
+            serviceScope.launch {
+                fileLogger.logServiceEvent("🔧 KeywordMonitor config: interval=${monitorInterval}s, autoStop=${autoStopDuration}s")
+                fileLogger.logServiceEvent("🔧 MediaProjection resultCode: $resultCode, hasData: ${resultData != null}")
+            }
+            
+            try {
+                startForeground(NOTIFICATION_ID, createNotification())
+                Log.d(TAG, "✅ Foreground notification created")
+                
+                startScreenCapture()
+                Log.d(TAG, "✅ Screen capture initiated")
+                
+                // Auto-stop po określonym czasie
+                startAutoStopTimer()
+                Log.d(TAG, "✅ Auto-stop timer started (${autoStopDuration}s)")
+                
+                serviceScope.launch {
+                    fileLogger.logServiceEvent("🚀 KeywordMonitor ACTIVE: Scanning every ${monitorInterval}s for ${autoStopDuration}s")
+                }
+                
+            } catch (e: Exception) {
+                Log.e(TAG, "❌ Error starting KeywordMonitor service", e)
+                serviceScope.launch {
+                    fileLogger.logServiceEvent("❌ STARTUP ERROR: ${e.message}")
+                }
+                stopSelf()
+            }
+        } else {
+            Log.e(TAG, "❌ KeywordMonitorService started with null intent!")
+            serviceScope.launch {
+                fileLogger.logServiceEvent("❌ ERROR: KeywordMonitor started with null intent")
+            }
+            stopSelf()
         }
         
         return START_STICKY
@@ -197,20 +242,33 @@ class KeywordMonitorService : Service() {
     private fun startScreenCapture() {
         Log.d(TAG, "🎬 Starting screen capture for keyword monitoring")
         
+        serviceScope.launch {
+            fileLogger.logServiceEvent("🎬 SCREEN CAPTURE: Initiating MediaProjection setup")
+        }
+        
         try {
             if (resultData == null) {
                 Log.e(TAG, "❌ No result data for MediaProjection")
+                serviceScope.launch {
+                    fileLogger.logServiceEvent("❌ CAPTURE ERROR: No MediaProjection data provided")
+                }
                 stopSelf()
                 return
             }
             
+            Log.d(TAG, "📋 MediaProjection data available, creating projection...")
             mediaProjection = mediaProjectionManager.getMediaProjection(resultCode, resultData!!)
             
             if (mediaProjection == null) {
                 Log.e(TAG, "❌ MediaProjection is null")
+                serviceScope.launch {
+                    fileLogger.logServiceEvent("❌ CAPTURE ERROR: MediaProjection creation failed")
+                }
                 stopSelf()
                 return
             }
+            
+            Log.d(TAG, "✅ MediaProjection created successfully")
             
             // Utwórz ImageReader do przechwytywania obrazów
             imageReader = ImageReader.newInstance(
@@ -232,25 +290,59 @@ class KeywordMonitorService : Service() {
                 handler
             )
             
+            Log.d(TAG, "🖼️ ImageReader created: ${screenWidth}x${screenHeight}")
+            
+            serviceScope.launch {
+                fileLogger.logServiceEvent("🖼️ ImageReader setup: ${screenWidth}x${screenHeight} RGBA_8888")
+            }
+            
             // Rozpocznij okresowe przechwytywanie
             startPeriodicCapture()
             
             Log.d(TAG, "✅ Screen capture for keyword monitoring started successfully")
             
+            serviceScope.launch {
+                fileLogger.logServiceEvent("✅ CAPTURE ACTIVE: Periodic scanning started (${monitorInterval}s interval)")
+            }
+            
         } catch (e: Exception) {
             Log.e(TAG, "❌ Error starting screen capture for keyword monitoring", e)
+            serviceScope.launch {
+                fileLogger.logServiceEvent("❌ SCREEN CAPTURE ERROR: ${e.message}")
+            }
             stopSelf()
         }
     }
     
     private fun startPeriodicCapture() {
         captureJob?.cancel()
+        
+        Log.d(TAG, "🔄 Starting periodic capture loop (${monitorInterval}s interval)")
+        
         captureJob = serviceScope.launch {
+            var cycleCount = 0
+            
+            fileLogger.logServiceEvent("🔄 PERIODIC CAPTURE: Starting monitoring loop")
+            
             while (isActive) {
+                cycleCount++
+                
+                Log.d(TAG, "🔍 Capture cycle #$cycleCount starting...")
+                
+                fileLogger.logServiceEvent("🔍 SCAN CYCLE #$cycleCount: Starting capture and analysis")
+                
                 captureAndAnalyzeScreen()
+                
+                Log.d(TAG, "⏱️ Waiting ${monitorInterval}s until next scan...")
+                
                 delay(monitorInterval * 1000L)
             }
+            
+            Log.d(TAG, "🛑 Periodic capture loop ended")
+            fileLogger.logServiceEvent("🛑 PERIODIC CAPTURE: Monitoring loop stopped")
         }
+        
+        Log.d(TAG, "✅ Periodic capture job created and started")
     }
     
     private suspend fun captureAndAnalyzeScreen(): Unit = withContext(Dispatchers.IO) {

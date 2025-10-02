@@ -19,8 +19,9 @@ class NetworkScanner(private val context: Context) {
     
     companion object {
         private const val TAG = "NetworkScanner"
-        private const val SCAN_TIMEOUT = 500 // ms - krótki timeout dla szybkości
+        private const val SCAN_TIMEOUT = 2000 // ms - zwiększone z 500ms na 2s
         private const val PAIRING_PORT = 8080 // Port używany do parowania
+        private const val MAX_PARALLEL_SCANS = 50 // Maksymalna liczba równoczesnych skanów
     }
     
     private val systemLogger = SystemLogger.getInstance(context)
@@ -75,39 +76,52 @@ class NetworkScanner(private val context: Context) {
      */
     suspend fun quickScan(onDeviceFound: (NetworkDevice) -> Unit): List<NetworkDevice> = withContext(Dispatchers.IO) {
         val devices = mutableListOf<NetworkDevice>()
-        val subnet = getLocalSubnet() ?: return@withContext emptyList()
+        val subnet = getLocalSubnet()
         
+        if (subnet == null) {
+            Log.e(TAG, "❌ Cannot get local subnet - WiFi not connected?")
+            systemLogger.e(TAG, "❌ Nie można pobrać lokalnej podsieci - brak WiFi?")
+            return@withContext emptyList()
+        }
+        
+        Log.d(TAG, "🔍 Starting network scan on $subnet.0/24 (timeout: ${SCAN_TIMEOUT}ms)")
         systemLogger.i(TAG, "🔍 Rozpoczęcie szybkiego skanowania sieci $subnet.0/24")
         val startTime = System.currentTimeMillis()
         
         try {
-            // Skanuj 1-254 (pomijamy .0 i .255)
+            // Skanuj 1-254 (pomijamy .0 i .255) w batch'ach żeby nie przeciążyć sieci
             coroutineScope {
-                val jobs = (1..254).map { host ->
-                    val ip = "$subnet.$host"
+                val allHosts = (1..254).map { "$subnet.$it" }
+                
+                // Podziel na chunki po MAX_PARALLEL_SCANS
+                allHosts.chunked(MAX_PARALLEL_SCANS).forEach { hostBatch ->
+                    Log.d(TAG, "🔄 Scanning batch of ${hostBatch.size} hosts...")
                     
-                    // Asynchroniczne sprawdzenie każdego hosta
-                    async {
-                        try {
-                            val device = checkHost(ip)
-                            if (device != null) {
-                                systemLogger.i(TAG, "✅ Znaleziono urządzenie: ${device.getDisplayName()}")
-                                onDeviceFound(device)
-                                device
-                            } else {
+                    val jobs = hostBatch.map { ip ->
+                        async {
+                            try {
+                                val device = checkHost(ip)
+                                if (device != null) {
+                                    Log.d(TAG, "✅ Found device: ${device.getDisplayName()} at $ip")
+                                    systemLogger.i(TAG, "✅ Znaleziono urządzenie: ${device.getDisplayName()}")
+                                    onDeviceFound(device)
+                                    device
+                                } else {
+                                    null
+                                }
+                            } catch (e: Exception) {
+                                Log.v(TAG, "No response from $ip: ${e.message}")
                                 null
                             }
-                        } catch (e: Exception) {
-                            null
                         }
                     }
-                }
-                
-                // Czekaj na wszystkie wyniki
-                jobs.forEach { job ->
-                    val device = job.await()
-                    if (device != null) {
-                        devices.add(device)
+                    
+                    // Czekaj na wyniki tego batch'a
+                    jobs.forEach { job ->
+                        val device = job.await()
+                        if (device != null) {
+                            devices.add(device)
+                        }
                     }
                 }
             }
@@ -170,11 +184,14 @@ class NetworkScanner(private val context: Context) {
      */
     private fun checkPort(ip: String, port: Int): Boolean {
         return try {
+            Log.v(TAG, "Checking port $port on $ip...")
             val socket = Socket()
             socket.connect(InetSocketAddress(ip, port), SCAN_TIMEOUT)
             socket.close()
+            Log.d(TAG, "✅ Port $port is OPEN on $ip")
             true
         } catch (e: Exception) {
+            Log.v(TAG, "Port $port closed on $ip: ${e.javaClass.simpleName}")
             false
         }
     }
@@ -185,50 +202,73 @@ class NetworkScanner(private val context: Context) {
      */
     suspend fun scanForPairingDevices(onDeviceFound: (NetworkDevice) -> Unit): List<NetworkDevice> = withContext(Dispatchers.IO) {
         val devices = mutableListOf<NetworkDevice>()
-        val subnet = getLocalSubnet() ?: return@withContext emptyList()
+        val subnet = getLocalSubnet()
         
+        if (subnet == null) {
+            Log.e(TAG, "❌ Cannot get local subnet for pairing scan")
+            systemLogger.e(TAG, "❌ Nie można pobrać podsieci dla skanowania parowania")
+            return@withContext emptyList()
+        }
+        
+        Log.d(TAG, "🔍 Scanning for pairing devices on port $PAIRING_PORT in $subnet.0/24")
         systemLogger.i(TAG, "🔍 Skanowanie urządzeń z portem parowania ($PAIRING_PORT)")
+        val startTime = System.currentTimeMillis()
         
         try {
             coroutineScope {
-                val jobs = (1..254).map { host ->
-                    val ip = "$subnet.$host"
+                val allHosts = (1..254).map { "$subnet.$it" }
+                var scannedCount = 0
+                
+                // Skanuj w mniejszych batch'ach dla port checking
+                allHosts.chunked(30).forEach { hostBatch ->
+                    Log.d(TAG, "🔄 Checking ports on batch ${scannedCount + 1}-${scannedCount + hostBatch.size}/254...")
                     
-                    async {
-                        try {
-                            // Najpierw sprawdź port (szybsze)
-                            if (checkPort(ip, PAIRING_PORT)) {
-                                val device = checkHost(ip)
-                                if (device != null) {
-                                    systemLogger.i(TAG, "✅ Znaleziono urządzenie z portem parowania: ${device.getDisplayName()}")
-                                    onDeviceFound(device)
-                                    device
+                    val jobs = hostBatch.map { ip ->
+                        async {
+                            try {
+                                // Najpierw sprawdź port (szybsze)
+                                if (checkPort(ip, PAIRING_PORT)) {
+                                    Log.d(TAG, "🎯 Found open pairing port on $ip, getting device info...")
+                                    val device = checkHost(ip)
+                                    if (device != null) {
+                                        Log.i(TAG, "✅ Pairing device found: ${device.getDisplayName()}")
+                                        systemLogger.i(TAG, "✅ Znaleziono urządzenie z portem parowania: ${device.getDisplayName()}")
+                                        onDeviceFound(device)
+                                        device
+                                    } else {
+                                        null
+                                    }
                                 } else {
                                     null
                                 }
-                            } else {
+                            } catch (e: Exception) {
+                                Log.v(TAG, "Error checking $ip: ${e.message}")
                                 null
                             }
-                        } catch (e: Exception) {
-                            null
                         }
                     }
-                }
-                
-                jobs.forEach { job ->
-                    val device = job.await()
-                    if (device != null) {
-                        devices.add(device)
+                    
+                    // Czekaj na wyniki tego batch'a
+                    jobs.forEach { job ->
+                        val device = job.await()
+                        if (device != null) {
+                            devices.add(device)
+                        }
                     }
+                    
+                    scannedCount += hostBatch.size
                 }
             }
             
-            systemLogger.i(TAG, "✅ Znaleziono ${devices.size} urządzeń z portem parowania")
-            devices.sortedBy { it.responseTime }
+            val scanTime = System.currentTimeMillis() - startTime
+            Log.d(TAG, "✅ Pairing scan completed: ${devices.size} devices found in ${scanTime}ms")
+            systemLogger.i(TAG, "✅ Znaleziono ${devices.size} urządzeń z portem parowania w ${scanTime}ms")
+            return@withContext devices.sortedBy { it.responseTime }
             
         } catch (e: Exception) {
+            Log.e(TAG, "❌ Error scanning pairing devices", e)
             systemLogger.e(TAG, "❌ Błąd skanowania urządzeń parowania", e)
-            emptyList()
+            return@withContext emptyList()
         }
     }
     

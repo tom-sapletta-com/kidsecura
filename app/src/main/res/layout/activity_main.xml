@@ -36,7 +36,7 @@
         android:layout_height="wrap_content"
         android:text="@string/btn_start_monitoring"
         android:layout_marginTop="24dp"
-        android:padding="12dp"
+        android:padding="11dp"
         app:layout_constraintTop_toBottomOf="@id/tvStatus"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
@@ -80,7 +80,7 @@
                     android:layout_height="wrap_content"
                     android:text="@string/no_logs_yet"
                     android:textSize="14sp"
-                    android:textColor="@color/gray_400"
+                    android:textColor="@color/white"
                     android:gravity="center"
                     android:visibility="visible" />
 
@@ -93,33 +93,31 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginBottom="2dp">
+            android:layout_marginBottom="1dp">
 
             <Button
                 android:id="@+id/btnViewLogs"
                 android:layout_width="0dp"
-                android:layout_height="44dp"
+                android:layout_height="38dp"
                 android:layout_weight="1"
                 android:text="📋 Logi"
-                android:layout_marginEnd="2dp"
+                android:layout_marginEnd="1dp"
                 android:textStyle="bold"
                 android:backgroundTint="#4CAF50"
                 android:insetTop="0dp"
-                android:insetBottom="0dp"
-                android:cornerRadius="2dp" />
+                android:insetBottom="0dp" />
 
             <Button
                 android:id="@+id/btnKeywordsTester"
                 android:layout_width="0dp"
-                android:layout_height="44dp"
+                android:layout_height="38dp"
                 android:layout_weight="1"
                 android:text="🔍 Tester"
-                android:layout_marginStart="2dp"
+                android:layout_marginStart="1dp"
                 android:textStyle="bold"
                 android:backgroundTint="#9C27B0"
                 android:insetTop="0dp"
-                android:insetBottom="0dp"
-                android:cornerRadius="2dp" />
+                android:insetBottom="0dp" />
 
         </LinearLayout>
         
@@ -127,47 +125,44 @@
         <Button
             android:id="@+id/btnDetectionDemo"
             android:layout_width="match_parent"
-            android:layout_height="44dp"
-            android:text="🎯 DEMO: Wielojęzyczna Detekcja Słów Kluczowych"
-            android:layout_marginBottom="2dp"
+            android:layout_height="38dp"
+            android:text="🎯 DEMO: Detekcja Słów Kluczowych"
+            android:layout_marginBottom="1dp"
             android:textStyle="bold"
             android:backgroundTint="#00BCD4"
             android:insetTop="0dp"
-            android:insetBottom="0dp"
-            android:cornerRadius="2dp" />
+            android:insetBottom="0dp" />
 
         <!-- Second button row -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginBottom="2dp">
+            android:layout_marginBottom="1dp">
 
             <Button
                 android:id="@+id/btnManageDevices"
                 android:layout_width="0dp"
-                android:layout_height="44dp"
+                android:layout_height="38dp"
                 android:layout_weight="1"
                 android:text="📱 Urządzenia"
-                android:layout_marginEnd="2dp"
+                android:layout_marginEnd="1dp"
                 android:textStyle="bold"
                 android:backgroundTint="#2196F3"
                 android:insetTop="0dp"
-                android:insetBottom="0dp"
-                android:cornerRadius="2dp" />
+                android:insetBottom="0dp" />
 
             <Button
                 android:id="@+id/btnViewIncidents"
                 android:layout_width="0dp"
-                android:layout_height="44dp"
+                android:layout_height="38dp"
                 android:layout_weight="1"
                 android:text="⚠️ Incydenty"
-                android:layout_marginStart="2dp"
+                android:layout_marginStart="1dp"
                 android:textStyle="bold"
                 android:backgroundTint="#F44336"
                 android:insetTop="0dp"
-                android:insetBottom="0dp"
-                android:cornerRadius="2dp" />
+                android:insetBottom="0dp" />
 
         </LinearLayout>
 
@@ -176,33 +171,31 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginBottom="2dp">
+            android:layout_marginBottom="1dp">
 
             <Button
                 android:id="@+id/btnPairDevice"
                 android:layout_width="0dp"
-                android:layout_height="44dp"
+                android:layout_height="38dp"
                 android:layout_weight="1"
                 android:text="🔗 Sparuj"
-                android:layout_marginEnd="2dp"
+                android:layout_marginEnd="1dp"
                 android:textStyle="bold"
                 android:backgroundTint="#00BCD4"
                 android:insetTop="0dp"
-                android:insetBottom="0dp"
-                android:cornerRadius="2dp" />
+                android:insetBottom="0dp" />
 
             <Button
                 android:id="@+id/btnAlertSettings"
                 android:layout_width="0dp"
-                android:layout_height="44dp"
+                android:layout_height="38dp"
                 android:layout_weight="1"
                 android:text="⚙️ Ustawienia"
-                android:layout_marginStart="2dp"
+                android:layout_marginStart="1dp"
                 android:textStyle="bold"
                 android:backgroundTint="#795548"
                 android:insetTop="0dp"
-                android:insetBottom="0dp"
-                android:cornerRadius="2dp" />
+                android:insetBottom="0dp" />
 
         </LinearLayout>
         
@@ -210,101 +203,113 @@
         <Button
             android:id="@+id/btnAnalysisSettings"
             android:layout_width="match_parent"
-            android:layout_height="44dp"
+            android:layout_height="38dp"
             android:text="⚙️ Ustawienia Analizy i Monitoringu"
-            android:layout_marginBottom="2dp"
+            android:layout_marginBottom="1dp"
             android:textStyle="bold"
             android:backgroundTint="#795548"
             android:insetTop="0dp"
-            android:insetBottom="0dp"
-            android:cornerRadius="2dp" />
+            android:insetBottom="0dp" />
 
         <!-- Fourth button row - STEALTH MODE -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginBottom="2dp">
+            android:layout_marginBottom="1dp">
 
             <Button
                 android:id="@+id/btnStealthMode"
                 android:layout_width="0dp"
-                android:layout_height="44dp"
+                android:layout_height="38dp"
                 android:layout_weight="1"
                 android:text="🕵️ Tryb Ukryty"
-                android:layout_marginEnd="2dp"
+                android:layout_marginEnd="1dp"
                 android:textStyle="bold"
                 android:backgroundTint="#673AB7"
                 android:insetTop="0dp"
-                android:insetBottom="0dp"
-                android:cornerRadius="2dp" />
+                android:insetBottom="0dp" />
 
             <Button
                 android:id="@+id/btnStealthSettings"
                 android:layout_width="0dp"
-                android:layout_height="44dp"
+                android:layout_height="38dp"
                 android:layout_weight="1"
                 android:text="🎭 Konfiguracja"
-                android:layout_marginStart="2dp"
+                android:layout_marginStart="1dp"
                 android:textStyle="bold"
                 android:backgroundTint="#E91E63"
                 android:insetTop="0dp"
-                android:insetBottom="0dp"
-                android:cornerRadius="2dp" />
+                android:insetBottom="0dp" />
 
         </LinearLayout>
 
-        <!-- DEMO MODE - Screen Monitoring -->
-        <Button
-            android:id="@+id/btnScreenMonitoringDemo"
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="44dp"
-            android:text="🖥️ DEMO: Rozpocznij Monitorowanie Ekranu"
-            android:layout_marginBottom="2dp"
-            android:textStyle="bold"
-            android:backgroundTint="#FF9800"
-            android:insetTop="0dp"
-            android:insetBottom="0dp"
-            android:cornerRadius="2dp" />
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="1dp">
+            <!-- DEMO MODE - Screen Monitoring -->
+            <Button
+                android:id="@+id/btnScreenMonitoringDemo"
+                android:layout_width="0dp"
+                android:layout_height="38dp"
+                android:layout_weight="1"
+                android:text="🖥️ DEMO:Mon.Ekr."
+                android:layout_marginBottom="1dp"
+                android:textStyle="bold"
+                android:backgroundTint="#FF9800"
+                android:insetTop="0dp"
+                android:insetBottom="0dp" />
 
-        <!-- TEXT TO SPEECH - Screen Reader -->
-        <Button
-            android:id="@+id/btnScreenReader"
-            android:layout_width="match_parent"
-            android:layout_height="44dp"
-            android:text="🔊 Screen Reader 3x (10s)"
-            android:layout_marginBottom="2dp"
-            android:textStyle="bold"
-            android:backgroundTint="#3F51B5"
-            android:insetTop="0dp"
-            android:insetBottom="0dp"
-            android:cornerRadius="2dp" />
+            <!-- TEXT TO SPEECH - Screen Reader -->
+            <Button
+                android:id="@+id/btnScreenReader"
+                android:layout_width="0dp"
+                android:layout_height="38dp"
+                android:layout_weight="1"
+                android:text="🔊 Screen Reader"
+                android:layout_marginBottom="1dp"
+                android:textStyle="bold"
+                android:backgroundTint="#3F51B5"
+                android:insetTop="0dp"
+                android:insetBottom="0dp" />
 
-        <!-- SCREEN READER SETTINGS -->
-        <Button
-            android:id="@+id/btnScreenReaderSettings"
-            android:layout_width="match_parent"
-            android:layout_height="44dp"
-            android:text="⚙️ Ustawienia Screen Reader"
-            android:layout_marginBottom="2dp"
-            android:textStyle="bold"
-            android:backgroundTint="#607D8B"
-            android:insetTop="0dp"
-            android:insetBottom="0dp"
-            android:cornerRadius="2dp" />
+        </LinearLayout>
 
-        <!-- KEYWORD MONITORING -->
-        <Button
-            android:id="@+id/btnKeywordMonitoring"
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="44dp"
-            android:text="🔍 Monitor Słownika (10s)"
-            android:layout_marginBottom="2dp"
-            android:textStyle="bold"
-            android:backgroundTint="#D32F2F"
-            android:insetTop="0dp"
-            android:insetBottom="0dp"
-            android:cornerRadius="2dp" />
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="1dp">
+            <!-- SCREEN READER SETTINGS -->
+            <Button
+                android:id="@+id/btnScreenReaderSettings"
+                android:layout_width="0dp"
+                android:layout_height="38dp"
+                    android:layout_weight="1"
+
+                android:text="⚙️ Ust.Scr.Read."
+                android:layout_marginBottom="1dp"
+                android:textStyle="bold"
+                android:backgroundTint="#607D8B"
+                android:insetTop="0dp"
+                android:insetBottom="0dp" />
+
+            <!-- KEYWORD MONITORING -->
+            <Button
+                android:id="@+id/btnKeywordMonitoring"
+                android:layout_width="0dp"
+                android:layout_height="38dp"
+                    android:layout_weight="1"
+
+                android:text="🔍 Monit.Słow.10s"
+                android:layout_marginBottom="1dp"
+                android:textStyle="bold"
+                android:backgroundTint="#D32F2F"
+                android:insetTop="0dp"
+                android:insetBottom="0dp" />
+        </LinearLayout>
 
     </LinearLayout>
 
