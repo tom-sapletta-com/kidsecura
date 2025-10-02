@@ -71,7 +71,7 @@
             android:text="Statystyki incydentów"
             android:textSize="16sp"
             android:textStyle="bold"
-            android:textColor="#333333" />
+            android:textColor="@color/text_primary" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -202,7 +202,7 @@
             android:text="Poziom zagrożenia:"
             android:textSize="14sp"
             android:textStyle="bold"
-            android:textColor="#333333" />
+            android:textColor="@color/text_primary" />
 
         <LinearLayout
             android:layout_width="match_parent"
