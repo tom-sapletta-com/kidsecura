@@ -293,6 +293,21 @@ class MainActivity : AppCompatActivity() {
                     Toast.makeText(this@MainActivity, "Błąd Ustawień Analizy: ${e.message}", Toast.LENGTH_LONG).show()
                 }
             }
+            
+            // SCREEN MONITORING DEMO
+            Log.d(TAG, "🖥️ Setting up Screen Monitoring Demo button")
+            btnScreenMonitoringDemo.setOnClickListener {
+                try {
+                    Log.d(TAG, "🖥️ btnScreenMonitoringDemo clicked - Starting Demo Monitoring")
+                    systemLogger.logButtonClick("Screen Monitoring Demo", "MainActivity", true)
+                    startScreenMonitoringDemo()
+                    Log.d(TAG, "✅ Screen Monitoring Demo started")
+                } catch (e: Exception) {
+                    Log.e(TAG, "❌ BŁĄD podczas uruchamiania Screen Monitoring Demo", e)
+                    systemLogger.logButtonClick("Screen Monitoring Demo", "MainActivity", false, e.message)
+                    Toast.makeText(this@MainActivity, "Błąd Demo Monitorowania: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+            }
         }
         
         Log.d(TAG, "✅ setupUI() - COMPLETED SUCCESSFULLY")
@@ -396,6 +411,82 @@ class MainActivity : AppCompatActivity() {
         stopService(Intent(this, ScreenCaptureService::class.java))
         updateUI(false)
         Toast.makeText(this, R.string.service_stopped, Toast.LENGTH_SHORT).show()
+    }
+    
+    /**
+     * Uruchamia tryb demo monitorowania ekranu z rozszerzonym logowaniem
+     */
+    private fun startScreenMonitoringDemo() {
+        try {
+            Log.d(TAG, "🖥️ startScreenMonitoringDemo() - START")
+            systemLogger.i(TAG, "Starting Screen Monitoring Demo mode")
+            
+            // Włącz tryb demo w preferencjach
+            prefsManager.setDemoModeEnabled(true)
+            
+            AlertDialog.Builder(this)
+                .setTitle("🖥️ Tryb Demo - Monitorowanie Ekranu")
+                .setMessage("""
+                    🔍 DEMO MODE AKTYWNY
+                    
+                    Aplikacja będzie:
+                    ✅ Przechwytywać ekran co 3 sekundy
+                    ✅ Analizować cały tekst OCR
+                    ✅ Logować WSZYSTKIE wykryte teksty
+                    ✅ Zapisywać szczegóły do logów
+                    
+                    📋 Sprawdź logi w: Podgląd Logów
+                    
+                    ⚠️ UWAGA: Tryb demo zużywa więcej baterii
+                    
+                    Rozpocząć demo?
+                """.trimIndent())
+                .setPositiveButton("🚀 Rozpocznij Demo") { _, _ ->
+                    try {
+                        // Uruchom z trybem demo
+                        startDemoScreenCapture()
+                        
+                        Toast.makeText(this, 
+                            "🖥️ DEMO AKTYWNE\nSprawdź 'Podgląd Logów' po chwili", 
+                            Toast.LENGTH_LONG).show()
+                            
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Error starting demo", e)
+                        Toast.makeText(this, "Błąd demo: ${e.message}", Toast.LENGTH_LONG).show()
+                    }
+                }
+                .setNegativeButton("Anuluj", null)
+                .setNeutralButton("📋 Otwórz Logi") { _, _ ->
+                    startActivity(Intent(this, LogViewerActivity::class.java))
+                }
+                .show()
+                
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error in startScreenMonitoringDemo", e)
+            systemLogger.e(TAG, "Error starting screen monitoring demo", e)
+            Toast.makeText(this, "Błąd trybu demo: ${e.message}", Toast.LENGTH_LONG).show()
+        }
+    }
+    
+    /**
+     * Uruchamia przechwytywanie ekranu w trybie demo
+     */
+    private fun startDemoScreenCapture() {
+        try {
+            Log.d(TAG, "🎬 startDemoScreenCapture() - Demo mode")
+            
+            if (!isServiceRunning) {
+                // Poproś o pozwolenie na przechwytywanie ekranu
+                val captureIntent = mediaProjectionManager.createScreenCaptureIntent()
+                projectionLauncher.launch(captureIntent)
+            } else {
+                Toast.makeText(this, "⚠️ Monitoring już działa", Toast.LENGTH_SHORT).show()
+            }
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error starting demo screen capture", e)
+            throw e
+        }
     }
     
     private fun updateServiceStatus() {

@@ -119,9 +119,26 @@ class ContentAnalyzer(private val context: Context) {
         return try {
             val image = InputImage.fromBitmap(bitmap, 0)
             val result = textRecognizer.process(image).await()
+            
+            // W trybie demo loguj szczegóły OCR
+            if (prefsManager.isDemoModeEnabled()) {
+                Log.d(TAG, "🖥️ DEMO OCR Debug:")
+                Log.d(TAG, "  - Bitmap size: ${bitmap.width}x${bitmap.height}")
+                Log.d(TAG, "  - Extracted text length: ${result.text.length}")
+                Log.d(TAG, "  - Text blocks count: ${result.textBlocks.size}")
+                Log.d(TAG, "  - Raw text: '${result.text.take(100)}${if (result.text.length > 100) "..." else ""}'")
+                
+                if (result.textBlocks.isEmpty()) {
+                    Log.w(TAG, "🖥️ DEMO: ML Kit nie wykrył żadnych bloków tekstu!")
+                }
+            }
+            
             result.text
         } catch (e: Exception) {
             Log.e(TAG, "Error extracting text", e)
+            if (prefsManager.isDemoModeEnabled()) {
+                Log.e(TAG, "🖥️ DEMO OCR ERROR: ${e.message}")
+            }
             ""
         }
     }

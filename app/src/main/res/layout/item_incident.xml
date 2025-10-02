@@ -50,7 +50,7 @@
                         android:text="Samsung Galaxy S21"
                         android:textSize="16sp"
                         android:textStyle="bold"
-                        android:textColor="#333333"
+                        android:textColor="@color/white"
                         android:maxLines="1"
                         android:ellipsize="end" />
 
@@ -74,7 +74,7 @@
                     android:layout_height="wrap_content"
                     android:text="Dzisiaj o 14:23"
                     android:textSize="12sp"
-                    android:textColor="#666666"
+                    android:textColor="@color/gray_400"
                     android:layout_marginTop="2dp" />
 
             </LinearLayout>
@@ -87,7 +87,7 @@
                 android:background="?android:attr/selectableItemBackgroundBorderless"
                 android:src="@drawable/ic_more_vert"
                 android:contentDescription="Opcje"
-                android:tint="#999999" />
+                android:tint="@color/gray_500" />
 
         </LinearLayout>
 
@@ -120,7 +120,7 @@
                     android:layout_height="wrap_content"
                     android:text="Pewność: "
                     android:textSize="11sp"
-                    android:textColor="#999999" />
+                    android:textColor="@color/gray_500" />
 
                 <TextView
                     android:id="@+id/tvConfidence"
@@ -129,7 +129,7 @@
                     android:text="85%"
                     android:textSize="11sp"
                     android:textStyle="bold"
-                    android:textColor="#666666" />
+                    android:textColor="@color/gray_400" />
 
             </LinearLayout>
 
@@ -166,7 +166,7 @@
                     android:layout_height="wrap_content"
                     android:text="przemoc"
                     android:textSize="10sp"
-                    android:textColor="#666666"
+                    android:textColor="@color/gray_400"
                     android:background="@drawable/keyword_chip"
                     android:paddingHorizontal="8dp"
                     android:paddingVertical="4dp"
@@ -177,7 +177,7 @@
                     android:layout_height="wrap_content"
                     android:text="zagrożenie"
                     android:textSize="10sp"
-                    android:textColor="#666666"
+                    android:textColor="@color/gray_400"
                     android:background="@drawable/keyword_chip"
                     android:paddingHorizontal="8dp"
                     android:paddingVertical="4dp"

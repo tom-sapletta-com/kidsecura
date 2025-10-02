@@ -20,12 +20,14 @@ import androidx.core.app.NotificationCompat
 import com.parentalcontrol.mvp.MainActivity
 import com.parentalcontrol.mvp.R
 import com.parentalcontrol.mvp.analyzer.ContentAnalyzer
+import com.parentalcontrol.mvp.analyzer.AnalysisResult
 import com.parentalcontrol.mvp.data.MonitoringEvent
 import com.parentalcontrol.mvp.data.MonitoringDatabase
 import com.parentalcontrol.mvp.utils.ImageUtils
 import com.parentalcontrol.mvp.utils.NotificationHelper
 import com.parentalcontrol.mvp.utils.AppMonitor
 import com.parentalcontrol.mvp.utils.FileLogger
+import com.parentalcontrol.mvp.utils.PreferencesManager
 import kotlinx.coroutines.*
 import java.io.File
 import java.io.FileOutputStream
@@ -67,6 +69,7 @@ class ScreenCaptureService : Service() {
     private lateinit var notificationHelper: NotificationHelper
     private lateinit var appMonitor: AppMonitor
     private lateinit var fileLogger: FileLogger
+    private lateinit var prefsManager: PreferencesManager
     
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     
@@ -81,6 +84,7 @@ class ScreenCaptureService : Service() {
         notificationHelper = NotificationHelper(this)
         appMonitor = AppMonitor(this)
         fileLogger = FileLogger(this)
+        prefsManager = PreferencesManager(this)
         
         // Loguj start serwisu
         serviceScope.launch {
@@ -199,7 +203,15 @@ class ScreenCaptureService : Service() {
         captureRunnable = object : Runnable {
             override fun run() {
                 captureScreen()
-                handler.postDelayed(this, (captureInterval * 1000).toLong())
+                
+                // W trybie demo używaj krótszego interwału (3 sekundy)
+                val interval = if (prefsManager.isDemoModeEnabled()) {
+                    3 // 3 sekundy dla demo
+                } else {
+                    captureInterval // normalny interwał z ustawień
+                }
+                
+                handler.postDelayed(this, (interval * 1000).toLong())
             }
         }
         handler.post(captureRunnable!!)
@@ -280,6 +292,11 @@ class ScreenCaptureService : Service() {
                 // Loguj aktywność aplikacji
                 fileLogger.logAppActivity(currentApp.appName, currentApp.packageName)
                 
+                // DEMO MODE: Loguj WSZYSTKIE ekstraktowane teksty
+                if (prefsManager.isDemoModeEnabled()) {
+                    logDemoOCRText(analysisResult, currentApp.appName)
+                }
+                
                 // Jeśli wykryto podejrzaną treść
                 if (analysisResult.isSuspicious) {
                     val event = MonitoringEvent(
@@ -345,6 +362,56 @@ class ScreenCaptureService : Service() {
             if (file.lastModified() < sevenDaysAgo) {
                 file.delete()
                 Log.d(TAG, "Deleted old screenshot: ${file.name}")
+            }
+        }
+    }
+    
+    /**
+     * Loguje wszystkie teksty OCR w trybie demo
+     */
+    private fun logDemoOCRText(analysisResult: AnalysisResult, appName: String) {
+        serviceScope.launch {
+            try {
+                val extractedText = analysisResult.extractedText?.trim() ?: ""
+                
+                if (extractedText.isNotEmpty()) {
+                    // Loguj do FileLogger
+                    val demoMessage = "🖥️ DEMO OCR: $appName"
+                    val demoDetails = """
+                        📱 Aplikacja: $appName
+                        📝 Tekst OCR: $extractedText
+                        🎯 Podejrzane: ${if (analysisResult.isSuspicious) "TAK" else "NIE"}
+                        📊 Pewność: ${(analysisResult.confidence * 100).toInt()}%
+                        🔍 Typ: ${analysisResult.detectionType}
+                        📄 Długość: ${extractedText.length} znaków
+                    """.trimIndent()
+                    
+                    fileLogger.logSuspiciousContent(
+                        appName = appName,
+                        packageName = "demo.ocr.text",
+                        detectionType = "DEMO_OCR",
+                        description = demoMessage,
+                        confidence = analysisResult.confidence,
+                        extractedText = demoDetails
+                    )
+                    
+                    Log.d(TAG, "🖥️ DEMO OCR logged: $appName - ${extractedText.take(50)}...")
+                } else {
+                    // Loguj brak tekstu
+                    fileLogger.logSuspiciousContent(
+                        appName = appName,
+                        packageName = "demo.ocr.empty",
+                        detectionType = "DEMO_NO_TEXT",
+                        description = "🖥️ DEMO: Brak tekstu OCR",
+                        confidence = 0f,
+                        extractedText = "OCR nie wykrył żadnego tekstu na ekranie"
+                    )
+                    
+                    Log.d(TAG, "🖥️ DEMO OCR: No text detected in $appName")
+                }
+                
+            } catch (e: Exception) {
+                Log.e(TAG, "Error logging demo OCR text", e)
             }
         }
     }

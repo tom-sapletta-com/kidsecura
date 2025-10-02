@@ -133,6 +133,11 @@ class PreferencesManager(context: Context) {
     fun getStealthDisguiseMode(): String = prefs.getString(KEY_STEALTH_DISGUISE_MODE, "system_update") ?: "system_update"
     fun setStealthDisguiseMode(mode: String) = prefs.edit().putString(KEY_STEALTH_DISGUISE_MODE, mode).apply()
     
+    // ===== DEMO MODE METHODS =====
+    
+    fun isDemoModeEnabled(): Boolean = prefs.getBoolean("demo_mode_enabled", false)
+    fun setDemoModeEnabled(enabled: Boolean) = prefs.edit().putBoolean("demo_mode_enabled", enabled).apply()
+    
     fun getStealthLastAccess(): Long = prefs.getLong(KEY_STEALTH_LAST_ACCESS, 0L)
     fun setStealthLastAccess(timestamp: Long) = prefs.edit().putLong(KEY_STEALTH_LAST_ACCESS, timestamp).apply()
     

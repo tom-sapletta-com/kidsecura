@@ -39,8 +39,6 @@ class LogAdapter(private val context: Context) : ListAdapter<LogEntry, LogAdapte
         private val tvExpandCollapse: TextView = itemView.findViewById(R.id.tvExpandCollapse)
         private val viewTypeIndicator: View = itemView.findViewById(R.id.viewTypeIndicator)
         
-        private var isExpanded = false
-        
         fun bind(logEntry: LogEntry) {
             // Set log type
             val typeText = when (logEntry.type) {
@@ -85,31 +83,13 @@ class LogAdapter(private val context: Context) : ListAdapter<LogEntry, LogAdapte
             // Set message
             tvMessage.text = logEntry.message
             
-            // Set full content
+            // Set full content - zawsze widoczne
             tvFullContent.text = logEntry.fullContent
+            tvFullContent.visibility = View.VISIBLE
+            tvFullContent.maxLines = Int.MAX_VALUE
             
-            // Initialize collapsed state
-            isExpanded = false
-            tvFullContent.visibility = View.GONE
-            tvExpandCollapse.text = context.getString(R.string.show_details)
-            
-            // Set expand/collapse click listener
-            tvExpandCollapse.setOnClickListener {
-                isExpanded = !isExpanded
-                if (isExpanded) {
-                    tvFullContent.visibility = View.VISIBLE
-                    tvFullContent.maxLines = Int.MAX_VALUE
-                    tvExpandCollapse.text = context.getString(R.string.hide_details)
-                } else {
-                    tvFullContent.visibility = View.GONE
-                    tvExpandCollapse.text = context.getString(R.string.show_details)
-                }
-            }
-            
-            // Show/hide expand button if content is short
-            val shouldShowExpandButton = logEntry.fullContent.length > 100 || 
-                                       logEntry.fullContent.lines().size > 2
-            tvExpandCollapse.visibility = if (shouldShowExpandButton) View.VISIBLE else View.GONE
+            // Ukryj przycisk expand/collapse
+            tvExpandCollapse.visibility = View.GONE
         }
         
         private fun parseTimestamp(timestamp: String): Date? {

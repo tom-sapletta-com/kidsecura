@@ -215,6 +215,16 @@
 
         </LinearLayout>
 
+        <!-- DEMO MODE - Screen Monitoring -->
+        <Button
+            android:id="@+id/btnScreenMonitoringDemo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="🖥️ DEMO: Rozpocznij Monitorowanie Ekranu"
+            android:layout_marginBottom="8dp"
+            android:textStyle="bold"
+            android:backgroundTint="@color/warning" />
+
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
