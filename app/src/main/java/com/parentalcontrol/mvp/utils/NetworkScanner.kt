@@ -22,7 +22,7 @@ class NetworkScanner(private val context: Context) {
         private const val TAG = "NetworkScanner"
         // Używamy centralnej konfiguracji z PairingConfig
         private val SCAN_TIMEOUT = PairingConfig.NETWORK_SCAN_TIMEOUT_MS
-        private val PAIRING_PORT = PairingConfig.PAIRING_PORT
+        private val AVAILABLE_PORTS = PairingConfig.AVAILABLE_PORTS  // Lista portów do skanowania
         private val MAX_PARALLEL_SCANS = PairingConfig.MAX_PARALLEL_SCANS
     }
     
@@ -36,13 +36,20 @@ class NetworkScanner(private val context: Context) {
         val hostname: String?,
         val isReachable: Boolean,
         val hasPairingPort: Boolean,
+        val openPort: Int?,  // Port który jest otwarty (jeśli znaleziono)
         val responseTime: Long // ms
     ) {
         fun getDisplayName(): String {
-            return if (!hostname.isNullOrEmpty() && hostname != ip) {
+            val name = if (!hostname.isNullOrEmpty() && hostname != ip) {
                 "$hostname ($ip)"
             } else {
                 ip
+            }
+            
+            return if (openPort != null) {
+                "$name:$openPort"
+            } else {
+                name
             }
         }
     }
@@ -141,7 +148,7 @@ class NetworkScanner(private val context: Context) {
     }
     
     /**
-     * Sprawdza konkretny host
+     * Sprawdza konkretny host i próbuje wszystkich dostępnych portów
      */
     private suspend fun checkHost(ip: String): NetworkDevice? = withContext(Dispatchers.IO) {
         val startTime = System.currentTimeMillis()
@@ -163,18 +170,31 @@ class NetworkScanner(private val context: Context) {
                 null
             }
             
-            // Sprawdź czy ma otwarty port parowania
-            val hasPairingPort = checkPort(ip, PAIRING_PORT)
+            // Sprawdź wszystkie dostępne porty - znajdź pierwszy otwarty
+            var openPort: Int? = null
+            for (port in AVAILABLE_PORTS) {
+                if (checkPort(ip, port)) {
+                    Log.d(TAG, "✅ Found open port $port on $ip")
+                    openPort = port
+                    break  // Użyj pierwszego znalezionego portu
+                }
+            }
             
             val responseTime = System.currentTimeMillis() - startTime
             
-            NetworkDevice(
-                ip = ip,
-                hostname = if (hostname != ip) hostname else null,
-                isReachable = true,
-                hasPairingPort = hasPairingPort,
-                responseTime = responseTime
-            )
+            // Zwróć urządzenie tylko jeśli ma otwarty port
+            if (openPort != null) {
+                NetworkDevice(
+                    ip = ip,
+                    hostname = if (hostname != ip) hostname else null,
+                    isReachable = true,
+                    hasPairingPort = true,
+                    openPort = openPort,
+                    responseTime = responseTime
+                )
+            } else {
+                null  // Brak otwartego portu - nie zwracaj urządzenia
+            }
             
         } catch (e: Exception) {
             null
@@ -212,8 +232,8 @@ class NetworkScanner(private val context: Context) {
             return@withContext emptyList()
         }
         
-        Log.d(TAG, "🔍 Scanning for pairing devices on port $PAIRING_PORT in $subnet.0/24")
-        systemLogger.i(TAG, "🔍 Skanowanie urządzeń z portem parowania ($PAIRING_PORT)")
+        Log.d(TAG, "🔍 Scanning for pairing devices on ports ${AVAILABLE_PORTS.joinToString()} in $subnet.0/24")
+        systemLogger.i(TAG, "🔍 Skanowanie urządzeń z portami parowania (${AVAILABLE_PORTS.joinToString()})")
         val startTime = System.currentTimeMillis()
         
         try {
@@ -223,23 +243,18 @@ class NetworkScanner(private val context: Context) {
                 
                 // Skanuj w mniejszych batch'ach dla port checking
                 allHosts.chunked(30).forEach { hostBatch ->
-                    Log.d(TAG, "🔄 Checking ports on batch ${scannedCount + 1}-${scannedCount + hostBatch.size}/254...")
+                    Log.d(TAG, "🔄 Checking hosts ${scannedCount + 1}-${scannedCount + hostBatch.size}/254...")
                     
                     val jobs = hostBatch.map { ip ->
                         async {
                             try {
-                                // Najpierw sprawdź port (szybsze)
-                                if (checkPort(ip, PAIRING_PORT)) {
-                                    Log.d(TAG, "🎯 Found open pairing port on $ip, getting device info...")
-                                    val device = checkHost(ip)
-                                    if (device != null) {
-                                        Log.i(TAG, "✅ Pairing device found: ${device.getDisplayName()}")
-                                        systemLogger.i(TAG, "✅ Znaleziono urządzenie z portem parowania: ${device.getDisplayName()}")
-                                        onDeviceFound(device)
-                                        device
-                                    } else {
-                                        null
-                                    }
+                                // checkHost sprawdza wszystkie porty automatycznie
+                                val device = checkHost(ip)
+                                if (device != null) {
+                                    Log.i(TAG, "✅ Pairing device found: ${device.getDisplayName()}")
+                                    systemLogger.i(TAG, "✅ Znaleziono urządzenie: ${device.getDisplayName()}")
+                                    onDeviceFound(device)
+                                    device
                                 } else {
                                     null
                                 }

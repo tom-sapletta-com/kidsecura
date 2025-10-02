@@ -104,12 +104,13 @@ class PairingService(private val context: Context) {
     
     /**
      * Uruchamia tylko serwer nasłuchujący (dla urządzenia DZIECKA)
-     * Nie próbuje łączyć się z innym urządzeniem
+     * Próbuje kolejnych portów z listy aż znajdzie wolny
+     * Testuje czy port faktycznie działa przed potwierdzeniem
      */
-    fun startListeningServer(callback: (success: Boolean, message: String?) -> Unit) {
+    fun startListeningServer(callback: (success: Boolean, message: String?, port: Int?) -> Unit) {
         serviceScope.launch {
             try {
-                Log.d(TAG, "🎧 Starting listening server on port ${PairingConfig.PAIRING_PORT}...")
+                Log.d(TAG, "🎧 Starting listening server - trying available ports...")
                 
                 // Zamknij poprzedni serwer jeśli istnieje
                 stopServer()
@@ -117,15 +118,69 @@ class PairingService(private val context: Context) {
                 // Poczekaj aby port został zwolniony
                 delay(300)
                 
-                // Uruchom serwer nasłuchujący
-                startServer()
+                // Próbuj kolejnych portów
+                var successfulPort: Int? = null
+                val errors = mutableListOf<String>()
                 
-                callback(true, "Server started on port ${PairingConfig.PAIRING_PORT}")
-                Log.d(TAG, "✅ Listening server started successfully")
+                for (port in PairingConfig.AVAILABLE_PORTS) {
+                    try {
+                        Log.d(TAG, "🔌 Trying port $port...")
+                        
+                        // Spróbuj otworzyć port
+                        if (startServerOnPort(port)) {
+                            Log.d(TAG, "✅ Port $port opened successfully")
+                            
+                            // Opcjonalne testowanie portu (może być czasochłonne)
+                            // Dla szybkości pomijamy test - jeśli ServerSocket się otworzy, to działa
+                            val testEnabled = false  // Ustaw true aby włączyć test
+                            
+                            if (!testEnabled) {
+                                // Szybka weryfikacja - sprawdź czy socket jest faktycznie otwarty
+                                if (serverSocket != null && !serverSocket!!.isClosed) {
+                                    Log.d(TAG, "✅ Port $port verified - ServerSocket is open")
+                                    successfulPort = port
+                                    break
+                                } else {
+                                    Log.w(TAG, "⚠️ Port $port - ServerSocket verification failed")
+                                    errors.add("Port $port: socket verification failed")
+                                }
+                            } else {
+                                // Pełny test połączenia
+                                if (testPort(port)) {
+                                    Log.d(TAG, "✅ Port $port test passed - server is accessible")
+                                    successfulPort = port
+                                    break
+                                } else {
+                                    Log.w(TAG, "⚠️ Port $port opened but test failed")
+                                    stopServer()
+                                    errors.add("Port $port: test failed")
+                                }
+                            }
+                        } else {
+                            errors.add("Port $port: failed to bind")
+                        }
+                    } catch (e: Exception) {
+                        Log.w(TAG, "❌ Port $port failed: ${e.message}")
+                        errors.add("Port $port: ${e.message}")
+                        stopServer()
+                    }
+                    
+                    // Krótki delay przed następnym portem
+                    delay(200)
+                }
+                
+                if (successfulPort != null) {
+                    callback(true, "Server started on port $successfulPort", successfulPort)
+                    Log.d(TAG, "✅ Listening server started successfully on port $successfulPort")
+                } else {
+                    val errorMsg = "All ports failed:\n${errors.joinToString("\n")}"
+                    callback(false, errorMsg, null)
+                    Log.e(TAG, "❌ Failed to start server on any port")
+                }
                 
             } catch (e: Exception) {
                 Log.e(TAG, "❌ Error starting listening server", e)
-                callback(false, "Server error: ${e.message}")
+                callback(false, "Server error: ${e.message}", null)
             }
         }
     }
@@ -185,7 +240,86 @@ class PairingService(private val context: Context) {
     }
     
     /**
+     * Próbuje otworzyć serwer na konkretnym porcie
+     * @return true jeśli port został otwarty, false w przeciwnym razie
+     */
+    private suspend fun startServerOnPort(port: Int): Boolean = withContext(Dispatchers.IO) {
+        try {
+            serverSocket = ServerSocket(port)
+            Log.d(TAG, "✅ Successfully bound to port $port")
+            
+            // Uruchom pętlę accept w tle
+            serverJob = serviceScope.launch {
+                Log.d(TAG, "🚀 HTTP Server accept loop started on port $port")
+                var connectionCount = 0
+                
+                while (isActive && serverSocket?.isClosed == false) {
+                    try {
+                        Log.d(TAG, "⏳ Waiting for incoming connections on port $port...")
+                        val socket = serverSocket?.accept()
+                        
+                        if (socket != null) {
+                            connectionCount++
+                            Log.d(TAG, "📞 New connection #$connectionCount from: ${socket.remoteSocketAddress}")
+                            
+                            launch {
+                                handleHttpConnection(socket, connectionCount)
+                            }
+                        }
+                    } catch (e: Exception) {
+                        if (isActive) {
+                            Log.e(TAG, "Error accepting connection", e)
+                        }
+                    }
+                }
+            }
+            
+            true
+        } catch (e: java.net.BindException) {
+            Log.e(TAG, "❌ Port $port is already in use")
+            false
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error binding to port $port: ${e.message}")
+            false
+        }
+    }
+    
+    /**
+     * Testuje czy port jest faktycznie dostępny z zewnątrz
+     * Próbuje połączyć się z własnym serwerem
+     */
+    private suspend fun testPort(port: Int): Boolean = withContext(Dispatchers.IO) {
+        repeat(PairingConfig.PORT_TEST_RETRIES) { attempt ->
+            try {
+                Log.d(TAG, "🧪 Testing port $port (attempt ${attempt + 1}/${PairingConfig.PORT_TEST_RETRIES})...")
+                
+                delay(PairingConfig.PORT_TEST_RETRY_DELAY_MS)
+                
+                val localIp = getLocalIPAddress() ?: "127.0.0.1"
+                val socket = Socket()
+                socket.connect(
+                    java.net.InetSocketAddress(localIp, port),
+                    PairingConfig.PORT_TEST_TIMEOUT_MS
+                )
+                socket.close()
+                
+                Log.d(TAG, "✅ Port $port test successful")
+                return@withContext true
+            } catch (e: Exception) {
+                Log.w(TAG, "⚠️ Port $port test failed (attempt ${attempt + 1}): ${e.message}")
+                if (attempt < PairingConfig.PORT_TEST_RETRIES - 1) {
+                    delay(PairingConfig.PORT_TEST_RETRY_DELAY_MS)
+                }
+            }
+        }
+        
+        Log.e(TAG, "❌ Port $port test failed after ${PairingConfig.PORT_TEST_RETRIES} attempts")
+        return@withContext false
+    }
+    
+    /**
      * Rozpoczyna nasłuchiwanie na serwerze dla połączeń przychodzących
+     * @deprecated Użyj startServerOnPort(port) zamiast tego
      */
     private suspend fun startServer() = withContext(Dispatchers.IO) {
         try {

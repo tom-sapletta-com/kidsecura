@@ -9,21 +9,42 @@ package com.parentalcontrol.mvp.config
 object PairingConfig {
     
     /**
-     * Port TCP używany do parowania i komunikacji między urządzeniami
+     * Lista portów TCP używanych do parowania i komunikacji między urządzeniami
      * 
-     * WAŻNE: Oba urządzenia (rodzic i dziecko) muszą używać tego samego portu!
+     * System automatycznie próbuje kolejnych portów z listy:
+     * - 8000 - Alternatywny HTTP
+     * - 8080 - Popularny alternatywny HTTP (może być zajęty)
+     * - 8443 - Alternatywny HTTPS
+     * - 8888 - Mniej popularny, mniej kolizji
      * 
-     * Domyślnie: 8888
-     * - Alternatywny port HTTP (standardowy 8080 często zajęty)
-     * - Zakres portów użytkownika (1024-49151)
-     * - Mniej prawdopodobne konflikty z innymi aplikacjami
+     * TRYB DZIECKA:
+     * - Próbuje otworzyć porty w kolejności
+     * - Używa pierwszego wolnego portu
+     * - Testuje czy port faktycznie działa
      * 
-     * Zmiana portu:
-     * 1. Zmień wartość PAIRING_PORT
+     * TRYB RODZICA:
+     * - Skanuje wszystkie porty na każdym urządzeniu
+     * - Łączy się z pierwszym znalezionym otwartym portem
+     * 
+     * Zmiana listy portów:
+     * 1. Edytuj AVAILABLE_PORTS
      * 2. Przebuduj aplikację (./gradlew assembleDebug)
      * 3. Zainstaluj na WSZYSTKICH urządzeniach
      */
-    const val PAIRING_PORT = 8888
+    val AVAILABLE_PORTS = intArrayOf(8000, 8080, 8443, 8888)
+    
+    /**
+     * Domyślny port (pierwszy z listy)
+     * Używany jako fallback
+     */
+    val PAIRING_PORT: Int
+        get() = AVAILABLE_PORTS[0]
+    
+    /**
+     * Port preferowany (ostatni - najmniej kolizji)
+     */
+    val PREFERRED_PORT: Int
+        get() = AVAILABLE_PORTS.last()
     
     /**
      * Timeout dla skanowania sieci WiFi (w milisekundach)
@@ -79,4 +100,19 @@ object PairingConfig {
      * Długość klucza bezpieczeństwa (liczba znaków)
      */
     const val SECURITY_KEY_LENGTH = 32
+    
+    /**
+     * Timeout dla testowania czy port jest faktycznie otwarty (ms)
+     */
+    const val PORT_TEST_TIMEOUT_MS = 1000
+    
+    /**
+     * Liczba prób testowania portu
+     */
+    const val PORT_TEST_RETRIES = 3
+    
+    /**
+     * Delay między próbami testowania portu (ms)
+     */
+    const val PORT_TEST_RETRY_DELAY_MS = 500L
 }

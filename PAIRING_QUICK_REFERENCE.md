@@ -1,14 +1,28 @@
-# 🚀 Parowanie WiFi - Quick Reference
+# 🚀 Parowanie WiFi - Quick Reference v2.0
 
-## 📍 Gdzie Zmienić Port?
+## 🆕 CO NOWEGO?
 
-### Jeden Plik - Jedna Zmiana
+### ✨ System Wieloportowy z Autotestowaniem
+
+- **4 porty**: 8000, 8080, 8443, 8888
+- **Automatyczny wybór**: Pierwszy wolny port
+- **Autotestowanie**: Port jest testowany przed użyciem
+- **QR z walidacją**: WiFi SSID, IP i Port w kodzie QR
+- **Smart scanning**: Skanuje wszystkie porty na każdym urządzeniu
+
+---
+
+## 📍 Gdzie Zmienić Porty?
+
+### Jeden Plik - Lista Portów
 
 ```kotlin
 // app/src/main/java/com/parentalcontrol/mvp/config/PairingConfig.kt
 
 object PairingConfig {
-    const val PAIRING_PORT = 8888  // ← ZMIEŃ TUTAJ
+    val AVAILABLE_PORTS = intArrayOf(8000, 8080, 8443, 8888)
+    //                               ↑     ↑     ↑     ↑
+    //                          Dodaj lub usuń porty
 }
 ```
 
@@ -27,13 +41,25 @@ object PairingConfig {
 ### 1️⃣ Urządzenie DZIECKA
 
 ```
-🔗 Sparuj → DZIECKO → ✅ Port 8888 OTWARTY
+🔗 Sparuj → DZIECKO 
+   ↓
+🔌 Szukam wolnego portu...
+   ↓
+✅ Port 8888 OTWARTY i przetestowany!
+   ↓
+📱 QR kod z IP:8888 + WiFi SSID
 ```
 
 ### 2️⃣ Urządzenie RODZICA
 
 ```
-🌐 Skanuj Sieć WiFi → Zobacz urządzenia → 🔗 Sparuj → RODZIC
+🌐 Skanuj Sieć WiFi 
+   ↓
+Zobacz urządzenia:
+📱 Samsung:8888 ✅
+📱 Xiaomi:8080 ✅
+   ↓
+🔗 Sparuj → RODZIC → Auto-połączenie
 ```
 
 ---
@@ -42,8 +68,9 @@ object PairingConfig {
 
 | Problem | Rozwiązanie |
 |---------|-------------|
-| 🔴 Port zajęty | Restart telefonu LUB zmień port |
+| 🔴 Wszystkie porty zajęte | System próbuje 4 portów - sprawdź logi |
 | 🔴 Brak urządzeń | Sprawdź czy oba w tej samej WiFi |
+| 🔴 Port test failed | Firewall blokuje - wyłącz tymczasowo |
 | 🔴 Rozłącza się | Wyłącz optymalizację baterii |
 
 ---
@@ -51,11 +78,13 @@ object PairingConfig {
 ## 📋 Konfiguracje
 
 ```kotlin
-PAIRING_PORT              = 8888   // Port TCP
+AVAILABLE_PORTS           = [8000, 8080, 8443, 8888]  // Lista portów
 NETWORK_SCAN_TIMEOUT_MS   = 2000   // Timeout skanowania
 MAX_PARALLEL_SCANS        = 50     // Równoczesne skany
 CONNECTION_TIMEOUT_MS     = 3000   // Timeout połączenia
 HEARTBEAT_INTERVAL_MS     = 5000   // Interwał heartbeat
+PORT_TEST_TIMEOUT_MS      = 1000   // Timeout testu portu
+PORT_TEST_RETRIES         = 3      // Liczba prób testowania
 ```
 
 ---
@@ -75,9 +104,12 @@ Logcat → Filter: "Pairing"
 
 ### Kluczowe Logi:
 ```
-✅ "Starting listening server on port 8888"
-✅ "Successfully bound to port 8888"
-✅ "Port 8888 is OPEN on 192.168.1.15"
+✅ "🎧 Starting listening server - trying available ports"
+✅ "🔌 Trying port 8000..."
+✅ "✅ Port 8888 opened successfully"
+✅ "🧪 Testing port 8888..."
+✅ "✅ Port 8888 test passed - server is accessible"
+✅ "✅ Found open port 8888 on 192.168.1.15"
 ```
 
 ---

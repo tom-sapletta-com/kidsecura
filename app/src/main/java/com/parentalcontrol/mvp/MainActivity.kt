@@ -965,7 +965,10 @@ class MainActivity : AppCompatActivity() {
                                "🌐 IP: ${device.ip}\n" +
                                (if (device.hostname != null) "📝 Nazwa: ${device.hostname}\n" else "") +
                                "⏱️ Czas odpowiedzi: ${device.responseTime}ms\n" +
-                               "🔌 Port ${PairingConfig.PAIRING_PORT}: ${if (device.hasPairingPort) "✅ OTWARTY" else "🔒 Zamknięty"}\n" +
+                               (if (device.openPort != null) 
+                                   "🔌 Port: ${device.openPort} ✅ OTWARTY\n"
+                                else 
+                                   "🔌 Porty: 🔒 Wszystkie zamknięte\n") +
                                "━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
                         textSize = 12f
                         setTextIsSelectable(true)
@@ -976,10 +979,12 @@ class MainActivity : AppCompatActivity() {
                 
                 // Podsumowanie
                 val pairingDevices = devices.count { it.hasPairingPort }
+                val portsSummary = devices.mapNotNull { it.openPort }.distinct().joinToString(", ")
                 val summaryText = TextView(this).apply {
                     text = "\n📊 PODSUMOWANIE:\n" +
                            "• Wszystkich urządzeń: ${devices.size}\n" +
-                           "• Z otwartym portem ${PairingConfig.PAIRING_PORT}: $pairingDevices\n" +
+                           "• Z otwartym portem: $pairingDevices\n" +
+                           (if (portsSummary.isNotEmpty()) "• Znalezione porty: $portsSummary\n" else "") +
                            (if (pairingDevices > 0) "\n✅ Znaleziono urządzenia gotowe do parowania!" 
                             else "\n⚠️ Brak urządzeń z otwartym portem parowania")
                     textSize = 13f

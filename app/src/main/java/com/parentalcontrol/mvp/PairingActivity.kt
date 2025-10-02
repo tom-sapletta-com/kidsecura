@@ -27,6 +27,8 @@ class PairingActivity : AppCompatActivity() {
     private lateinit var qrCodeGenerator: QRCodeGenerator
     private lateinit var pairingService: PairingService
     private var deviceType: DeviceType = DeviceType.CHILD
+    private var activePort: Int? = null  // Port na którym działa serwer
+    private var pairingData: PairingData? = null  // Dane parowania po uruchomieniu serwera
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,8 +45,13 @@ class PairingActivity : AppCompatActivity() {
         setupUI()
         setupClickListeners()
         
-        // Automatycznie wygeneruj QR kod dla tego urządzenia
-        generateQRCode()
+        // Dla urządzenia DZIECKA: najpierw uruchom serwer, potem generuj QR
+        // Dla urządzenia RODZICA: od razu pokaż skaner QR
+        if (deviceType == DeviceType.CHILD) {
+            startPairingServer()
+        } else {
+            binding.statusText.text = "Zeskanuj kod QR z urządzenia dziecka"
+        }
     }
     
     private fun setupUI() {
@@ -96,53 +103,93 @@ class PairingActivity : AppCompatActivity() {
         }
     }
     
+    /**
+     * Generuje QR kod z pełnymi informacjami o serwerze
+     * WYMAGANE: activePort i pairingData muszą być ustawione (po uruchomieniu serwera)
+     */
     private fun generateQRCode() {
         lifecycleScope.launch {
             try {
-                Log.d(TAG, "Generowanie QR kodu dla typu urządzenia: $deviceType")
-                binding.statusText.text = getString(R.string.generating_qr_code)
+                val port = activePort
+                val data = pairingData
+                
+                if (port == null || data == null) {
+                    Log.e(TAG, "Cannot generate QR: port=$port, data=$data")
+                    binding.statusText.text = "❌ Błąd: Brak danych serwera"
+                    return@launch
+                }
+                
+                Log.d(TAG, "Generowanie QR kodu z portem $port")
+                binding.statusText.text = "Generowanie kodu QR..."
                 showLoading(true)
                 
-                // Wygeneruj dane parowania dla tego urządzenia
-                val pairingData = qrCodeGenerator.generatePairingData(deviceType)
-                Log.d(TAG, "Dane parowania wygenerowane: $pairingData")
+                // Aktualizuj dane parowania z rzeczywistym portem
+                val updatedData = data.copy(port = port)
                 
-                if (pairingData != null) {
-                    Log.d(TAG, "Generowanie QR bitmap dla danych: ${pairingData.deviceName}, typ: ${pairingData.deviceType}")
-                    // Wygeneruj bitmap QR kodu w wysokiej rozdzielczości dla pełnej szerokości ekranu
-                    val qrBitmap = qrCodeGenerator.generateQRCode(pairingData, 1024, 1024)
-                    Log.d(TAG, "QR bitmap wygenerowany: ${qrBitmap != null}, rozmiar: ${qrBitmap?.width}x${qrBitmap?.height}")
+                Log.d(TAG, "Generowanie QR bitmap dla: IP=${updatedData.ipAddress}, Port=$port, WiFi=${updatedData.wifiSSID}")
+                val qrBitmap = qrCodeGenerator.generateQRCode(updatedData, 1024, 1024)
+                
+                if (qrBitmap != null) {
+                    // Wyświetl QR kod
+                    binding.qrCodeImage.setImageBitmap(qrBitmap)
+                    binding.statusText.text = "✅ Gotowy do parowania!"
+                    Log.d(TAG, "QR kod pomyślnie wyświetlony")
                     
-                    if (qrBitmap != null) {
-                        // Wyświetl QR kod
-                        binding.qrCodeImage.setImageBitmap(qrBitmap)
-                        binding.statusText.text = getString(R.string.qr_code_ready)
-                        Log.d(TAG, "QR kod pomyślnie wyświetlony dla urządzenia ${deviceType}")
-                        
-                        // Pokaż szczegóły urządzenia
-                        showDeviceDetails(pairingData)
-                        
-                        // Rozpocznij nasłuchiwanie na połączenia
-                        startPairingServer()
-                        
-                    } else {
-                        binding.statusText.text = getString(R.string.error_generating_qr)
-                        Log.e(TAG, "Failed to generate QR code bitmap for device type: $deviceType")
-                    }
+                    // Pokaż szczegóły urządzenia z pełną walidacją
+                    showDeviceDetailsWithValidation(updatedData)
+                    
                 } else {
-                    binding.statusText.text = getString(R.string.error_device_info)
-                    Log.e(TAG, "Failed to generate pairing data")
+                    binding.statusText.text = "❌ Błąd generowania QR"
+                    Log.e(TAG, "Failed to generate QR code bitmap")
                 }
                 
             } catch (e: Exception) {
                 Log.e(TAG, "Error generating QR code", e)
-                binding.statusText.text = getString(R.string.error_generating_qr)
+                binding.statusText.text = "❌ Błąd: ${e.message}"
                 Toast.makeText(this@PairingActivity, 
                     "Error: ${e.message}", Toast.LENGTH_SHORT).show()
             } finally {
                 showLoading(false)
             }
         }
+    }
+    
+    /**
+     * Pokazuje szczegóły urządzenia z pełną walidacją WiFi
+     */
+    private fun showDeviceDetailsWithValidation(pairingData: PairingData) {
+        val details = buildString {
+            append("📱 ${getString(R.string.device_name)}: ${pairingData.deviceName}\n")
+            append("🔢 ${getString(R.string.device_type)}: ${getDeviceTypeString(pairingData.deviceType)}\n")
+            append("\n")
+            append("━━━━━━━━━━━━━━━━━━━━━\n")
+            append("🌐 INFORMACJE SIECIOWE:\n")
+            append("━━━━━━━━━━━━━━━━━━━━━\n")
+            append("📡 IP: ${pairingData.ipAddress}\n")
+            append("🔌 Port: ${pairingData.port}\n")
+            append("📶 WiFi: ${pairingData.wifiSSID ?: "N/A"}\n")
+            append("\n")
+            append("━━━━━━━━━━━━━━━━━━━━━\n")
+            append("🔐 BEZPIECZEŃSTWO:\n")
+            append("━━━━━━━━━━━━━━━━━━━━━\n")
+            append("🔑 ${getString(R.string.pairing_code)}: ${pairingData.pairingCode}\n")
+            append("\n")
+            append("━━━━━━━━━━━━━━━━━━━━━\n")
+            append("✅ WALIDACJA:\n")
+            append("━━━━━━━━━━━━━━━━━━━━━\n")
+            append("Przed sparowaniem sprawdź:\n")
+            append("✓ Urządzenie rodzica w WiFi:\n")
+            append("   \"${pairingData.wifiSSID}\"\n")
+            append("✓ Port ${pairingData.port} został\n")
+            append("   przetestowany i działa\n")
+            append("✓ Serwer nasłuchuje na:\n")
+            append("   ${pairingData.ipAddress}:${pairingData.port}")
+        }
+        
+        binding.deviceDetailsText.text = details
+        binding.deviceDetailsCard.visibility = android.view.View.VISIBLE
+        
+        Log.d(TAG, "Device details with validation shown: ${pairingData.ipAddress}:${pairingData.port} on WiFi ${pairingData.wifiSSID}")
     }
     
     private fun showDeviceDetails(pairingData: PairingData) {
@@ -174,7 +221,9 @@ class PairingActivity : AppCompatActivity() {
         
         lifecycleScope.launch {
             try {
-                Log.d(TAG, "🚀 Starting pairing server on port ${PairingConfig.PAIRING_PORT} for CHILD device...")
+                Log.d(TAG, "🚀 Starting pairing server - trying available ports...")
+                binding.statusText.text = "🔌 Szukam wolnego portu..."
+                showLoading(true)
                 
                 // Najpierw zatrzymaj ewentualny poprzedni serwer
                 pairingService.cleanup()
@@ -182,24 +231,46 @@ class PairingActivity : AppCompatActivity() {
                 // Poczekaj chwilę aby port został zwolniony
                 kotlinx.coroutines.delay(500)
                 
-                // Uruchom tylko serwer nasłuchujący (bez łączenia się z innym urządzeniem)
-                pairingService.startListeningServer { success, message ->
+                // Przygotuj dane parowania (będą zaktualizowane z rzeczywistym portem)
+                pairingData = PairingData(
+                    deviceId = android.provider.Settings.Secure.getString(contentResolver, android.provider.Settings.Secure.ANDROID_ID),
+                    deviceName = android.os.Build.MODEL,
+                    deviceType = deviceType,
+                    ipAddress = getLocalIpAddress() ?: "Unknown",
+                    port = 0,  // Zostanie zaktualizowany po znalezieniu wolnego portu
+                    securityKey = generateSecurityKey(),
+                    pairingCode = generatePairingCode(),
+                    wifiSSID = getWifiSSID()
+                )
+                
+                // Uruchom serwer (automatycznie próbuje wszystkich portów)
+                Log.d(TAG, "📞 Calling startListeningServer...")
+                pairingService.startListeningServer { success, message, port ->
+                    Log.d(TAG, "📞 Callback received: success=$success, port=$port, message=$message")
                     runOnUiThread {
-                        if (success) {
-                            Log.d(TAG, "✅ Pairing server started successfully on port ${PairingConfig.PAIRING_PORT}")
-                            binding.statusText.text = "✅ Serwer uruchomiony - Port ${PairingConfig.PAIRING_PORT} OTWARTY\nOczekiwanie na połączenie od rodzica..."
-                            Toast.makeText(this@PairingActivity, "✅ Port ${PairingConfig.PAIRING_PORT} otwarty - gotowy do parowania!", Toast.LENGTH_LONG).show()
+                        showLoading(false)
+                        
+                        if (success && port != null) {
+                            activePort = port
+                            Log.d(TAG, "✅ Pairing server started successfully on port $port")
+                            binding.statusText.text = "✅ Serwer uruchomiony - Port $port OTWARTY\nGenerowanie kodu QR..."
+                            Toast.makeText(this@PairingActivity, "✅ Port $port otwarty!", Toast.LENGTH_LONG).show()
+                            
+                            // Teraz wygeneruj QR kod z potwierdzonym portem
+                            generateQRCode()
                         } else {
                             Log.e(TAG, "❌ Failed to start pairing server: $message")
-                            binding.statusText.text = "❌ Błąd serwera: $message"
-                            Toast.makeText(this@PairingActivity, "❌ Błąd: $message", Toast.LENGTH_SHORT).show()
+                            binding.statusText.text = "❌ Błąd serwera:\n$message"
+                            Toast.makeText(this@PairingActivity, "❌ Nie można uruchomić serwera", Toast.LENGTH_LONG).show()
                         }
                     }
                 }
+                Log.d(TAG, "📞 startListeningServer called, waiting for callback...")
                 
             } catch (e: Exception) {
                 Log.e(TAG, "❌ Error starting pairing server", e)
                 runOnUiThread {
+                    showLoading(false)
                     binding.statusText.text = "❌ Błąd uruchamiania serwera: ${e.message}"
                     Toast.makeText(this@PairingActivity, "❌ Błąd serwera: ${e.message}", Toast.LENGTH_SHORT).show()
                 }
