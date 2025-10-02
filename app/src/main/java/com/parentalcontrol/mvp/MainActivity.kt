@@ -726,6 +726,33 @@ class MainActivity : AppCompatActivity() {
     }
     
     /**
+     * Uruchamia dedykowany serwis KeywordMonitor
+     */
+    private fun startKeywordMonitorService(resultCode: Int, data: Intent) {
+        try {
+            Log.d(TAG, "🔍 Starting KeywordMonitorService")
+            systemLogger.i(TAG, "Starting KeywordMonitorService with MediaProjection")
+            
+            val serviceIntent = Intent(this, com.parentalcontrol.mvp.service.KeywordMonitorService::class.java).apply {
+                putExtra("RESULT_CODE", resultCode)
+                putExtra("DATA", data)
+                putExtra("MONITOR_INTERVAL", 10) // 10 sekund
+                putExtra("AUTO_STOP_DURATION", 60) // 60 sekund
+            }
+            
+            startForegroundService(serviceIntent)
+            
+            Toast.makeText(this, "🔍 Monitor słownika uruchomiony!\nAutomatyczny stop za 60s", Toast.LENGTH_LONG).show()
+            Log.d(TAG, "✅ KeywordMonitorService started successfully")
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error starting KeywordMonitorService", e)
+            systemLogger.e(TAG, "Error starting KeywordMonitorService", e)
+            Toast.makeText(this, "Błąd uruchamiania monitora słownika: ${e.message}", Toast.LENGTH_LONG).show()
+        }
+    }
+    
+    /**
      * Zatrzymuje monitoring słownika
      */
     private fun stopKeywordMonitoring() {

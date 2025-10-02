@@ -228,6 +228,12 @@
             android:foregroundServiceType="mediaProjection" />
 
         <service
+            android:name=".service.KeywordMonitorService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="mediaProjection" />
+
+        <service
             android:name=".service.AccessibilityMonitoringService"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
             android:exported="false">
