@@ -152,10 +152,12 @@ class KeywordDetectionDemoActivity : AppCompatActivity() {
                 append("Dokładnych: $exactMatches, Podobnych: $fuzzyMatches\n")
                 append("Języki: ${result.languages.joinToString(", ")}")
             }
-            tvDetectionResult.setTextColor(getColor(android.R.color.holo_red_dark))
+            tvDetectionResult.setTextColor(getColor(R.color.danger))
+            tvDetectionResult.setBackgroundColor(getColor(R.color.danger_container))
         } else {
             tvDetectionResult.text = "✅ Tekst bezpieczny - nie wykryto zagrożeń"
-            tvDetectionResult.setTextColor(getColor(android.R.color.holo_green_dark))
+            tvDetectionResult.setTextColor(getColor(R.color.success))
+            tvDetectionResult.setBackgroundColor(getColor(R.color.success_container))
         }
     }
     
@@ -250,7 +252,8 @@ class KeywordDetectionDemoActivity : AppCompatActivity() {
             
             holder.tvKeyword.text = "$matchIcon ${keyword.keyword}"
             holder.tvDetails.text = "Język: ${keyword.language.uppercase()} | Typ: ${keyword.matchType}"
-            holder.tvKeyword.setTextColor(getColor(android.R.color.holo_red_dark))
+            holder.tvKeyword.setTextColor(getColor(R.color.danger))
+            holder.tvDetails.setTextColor(getColor(R.color.text_secondary))
         }
         
         override fun getItemCount() = keywords.size

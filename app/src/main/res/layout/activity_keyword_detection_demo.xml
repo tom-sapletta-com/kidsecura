@@ -37,7 +37,7 @@
                 android:text="🔍 Demo Wykrywania Słów"
                 android:textSize="20sp"
                 android:textStyle="bold"
-                android:textColor="@color/md_theme_light_onSurface"
+                android:textColor="@color/md_theme_light_primary"
                 android:gravity="center" />
 
             <View
@@ -66,6 +66,7 @@
                     android:text="ℹ️ Jak działa detekcja:"
                     android:textSize="16sp"
                     android:textStyle="bold"
+                    android:textColor="@color/info"
                     android:layout_marginBottom="8dp" />
 
                 <TextView
@@ -73,6 +74,7 @@
                     android:layout_height="wrap_content"
                     android:text="• Normalizacja: usuwa polskie znaki (ą→a, ę→e)\n• Fuzzy matching: wykrywa literówki\n• 6 języków: PL, EN, DE, FR, ES, IT\n• 200+ słów kluczowych ze slangiem"
                     android:textSize="14sp"
+                    android:textColor="@color/text_secondary"
                     android:lineSpacingExtra="4dp" />
 
             </LinearLayout>
@@ -98,6 +100,7 @@
                     android:layout_height="wrap_content"
                     android:text="🌍 Wybierz język:"
                     android:textSize="16sp"
+                    android:textColor="@color/text_primary"
                     android:textStyle="bold"
                     android:layout_marginBottom="8dp" />
 
@@ -140,6 +143,7 @@
                     android:text="✍️ Wpisz tekst do testowania:"
                     android:textSize="16sp"
                     android:textStyle="bold"
+                    android:textColor="@color/text_primary"
                     android:layout_marginBottom="8dp" />
 
                 <EditText
@@ -161,10 +165,10 @@
                     android:text="Znormalizowany tekst pojawi się tutaj..."
                     android:textSize="12sp"
                     android:textStyle="italic"
-                    android:textColor="@android:color/darker_gray"
+                    android:textColor="@color/text_hint"
                     android:layout_marginTop="8dp"
                     android:padding="8dp"
-                    android:background="@android:color/white" />
+                    android:background="@color/gray_50" />
 
             </LinearLayout>
 
@@ -190,6 +194,7 @@
                     android:text="🎯 Wynik detekcji:"
                     android:textSize="16sp"
                     android:textStyle="bold"
+                    android:textColor="@color/text_primary"
                     android:layout_marginBottom="8dp" />
 
                 <TextView
@@ -198,8 +203,9 @@
                     android:layout_height="wrap_content"
                     android:text="Wpisz tekst aby zobaczyć wyniki..."
                     android:textSize="14sp"
+                    android:textColor="@color/text_secondary"
                     android:padding="8dp"
-                    android:background="@android:color/white" />
+                    android:background="@color/gray_50" />
 
             </LinearLayout>
 
@@ -225,6 +231,7 @@
                     android:text="⚠️ Wykryte zagrożenia:"
                     android:textSize="16sp"
                     android:textStyle="bold"
+                    android:textColor="@color/warning"
                     android:layout_marginBottom="8dp" />
 
                 <androidx.recyclerview.widget.RecyclerView
