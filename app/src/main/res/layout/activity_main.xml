@@ -230,10 +230,20 @@
             android:id="@+id/btnScreenReader"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="🔊 Czytaj Ekran Na Głos (30s)"
+            android:text="🔊 Screen Reader 3x (10s)"
             android:layout_marginBottom="8dp"
             android:textStyle="bold"
             android:backgroundTint="@color/info" />
+
+        <!-- SCREEN READER SETTINGS -->
+        <Button
+            android:id="@+id/btnScreenReaderSettings"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="⚙️ Ustawienia Screen Reader"
+            android:layout_marginBottom="8dp"
+            android:textStyle="bold"
+            android:backgroundTint="@color/gray_600" />
 
     </LinearLayout>
 

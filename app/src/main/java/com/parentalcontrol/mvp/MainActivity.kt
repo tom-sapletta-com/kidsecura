@@ -337,6 +337,21 @@ class MainActivity : AppCompatActivity() {
                     Toast.makeText(this@MainActivity, "Błąd Screen Reader: ${e.message}", Toast.LENGTH_LONG).show()
                 }
             }
+            
+            // SCREEN READER SETTINGS
+            Log.d(TAG, "⚙️ Setting up Screen Reader Settings button")
+            btnScreenReaderSettings.setOnClickListener {
+                try {
+                    Log.d(TAG, "⚙️ btnScreenReaderSettings clicked - Opening Screen Reader Settings")
+                    systemLogger.logButtonClick("Screen Reader Settings", "MainActivity", true)
+                    showScreenReaderSettings()
+                    Log.d(TAG, "✅ Screen Reader Settings opened")
+                } catch (e: Exception) {
+                    Log.e(TAG, "❌ BŁĄD podczas otwierania Screen Reader Settings", e)
+                    systemLogger.logButtonClick("Screen Reader Settings", "MainActivity", false, e.message)
+                    Toast.makeText(this@MainActivity, "Błąd ustawień: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+            }
         }
         
         Log.d(TAG, "✅ setupUI() - COMPLETED SUCCESSFULLY")
@@ -532,8 +547,9 @@ class MainActivity : AppCompatActivity() {
                     📢 SCREEN READER AKTYWNY
                     
                     Aplikacja będzie:
-                    ✅ Przechwytywać ekran co 2 sekundy
-                    ✅ Czytać wykryty tekst na głos
+                    ✅ Przechwytywać ekran co 10 sekund
+                    ✅ Czytać tekst 3x szybciej
+                    ✅ Pomijać górne i dolne 10% ekranu
                     ✅ Automatycznie stop po 30 sekundach
                     ✅ Lub możliwość zatrzymania ręcznego
                     
@@ -579,12 +595,19 @@ class MainActivity : AppCompatActivity() {
             Log.d(TAG, "🔊 Starting ScreenReaderService")
             systemLogger.i(TAG, "Starting ScreenReaderService with MediaProjection")
             
+            // Pobierz ustawienia z PreferencesManager
+            val interval = prefsManager.getScreenReaderInterval()
+            val speechRate = prefsManager.getScreenReaderSpeechRate()
+            val language = prefsManager.getScreenReaderLanguage()
+            
             val serviceIntent = Intent(this, com.parentalcontrol.mvp.service.ScreenReaderService::class.java).apply {
                 putExtra("RESULT_CODE", resultCode)
                 putExtra("DATA", data)
-                putExtra("READ_INTERVAL", 2) // 2 sekundy
-                putExtra("SPEECH_RATE", 1.0f) // Normalna prędkość
-                putExtra("LANGUAGE", "pl_PL") // Polski język
+                putExtra("READ_INTERVAL", interval)
+                putExtra("SPEECH_RATE", speechRate)
+                putExtra("LANGUAGE", language)
+                putExtra("TOP_CROP", prefsManager.getScreenReaderTopCrop())
+                putExtra("BOTTOM_CROP", prefsManager.getScreenReaderBottomCrop())
             }
             
             startForegroundService(serviceIntent)
@@ -616,6 +639,178 @@ class MainActivity : AppCompatActivity() {
         } catch (e: Exception) {
             Log.e(TAG, "❌ Error stopping screen reader", e)
             Toast.makeText(this, "Błąd zatrzymywania: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+    
+    /**
+     * Pokazuje dialog ustawień Screen Reader
+     */
+    private fun showScreenReaderSettings() {
+        try {
+            Log.d(TAG, "⚙️ showScreenReaderSettings() - START")
+            
+            val dialogView = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(32, 32, 32, 32)
+            }
+            
+            // Title
+            val titleView = TextView(this).apply {
+                text = "⚙️ Ustawienia Screen Reader"
+                textSize = 18f
+                setTypeface(null, android.graphics.Typeface.BOLD)
+                setPadding(0, 0, 0, 24)
+            }
+            dialogView.addView(titleView)
+            
+            // Interval setting
+            val intervalLabel = TextView(this).apply {
+                text = "🕐 Interwał czytania (sekundy):"
+                textSize = 14f
+                setPadding(0, 0, 0, 8)
+            }
+            dialogView.addView(intervalLabel)
+            
+            val intervalInput = EditText(this).apply {
+                setText(prefsManager.getScreenReaderInterval().toString())
+                inputType = android.text.InputType.TYPE_CLASS_NUMBER
+                hint = "10"
+            }
+            dialogView.addView(intervalInput)
+            
+            // Speech rate setting
+            val rateLabel = TextView(this).apply {
+                text = "🔊 Prędkość mowy (1.0 = normalna, 2.0 = 2x):"
+                textSize = 14f
+                setPadding(0, 16, 0, 8)
+            }
+            dialogView.addView(rateLabel)
+            
+            val rateInput = EditText(this).apply {
+                setText(prefsManager.getScreenReaderSpeechRate().toString())
+                inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL
+                hint = "2.0"
+            }
+            dialogView.addView(rateInput)
+            
+            // Top crop setting
+            val topCropLabel = TextView(this).apply {
+                text = "📏 Pomiń górną część ekranu (%):"
+                textSize = 14f
+                setPadding(0, 16, 0, 8)
+            }
+            dialogView.addView(topCropLabel)
+            
+            val topCropInput = EditText(this).apply {
+                setText(prefsManager.getScreenReaderTopCrop().toString())
+                inputType = android.text.InputType.TYPE_CLASS_NUMBER
+                hint = "10"
+            }
+            dialogView.addView(topCropInput)
+            
+            // Bottom crop setting
+            val bottomCropLabel = TextView(this).apply {
+                text = "📐 Pomiń dolną część ekranu (%):"
+                textSize = 14f
+                setPadding(0, 16, 0, 8)
+            }
+            dialogView.addView(bottomCropLabel)
+            
+            val bottomCropInput = EditText(this).apply {
+                setText(prefsManager.getScreenReaderBottomCrop().toString())
+                inputType = android.text.InputType.TYPE_CLASS_NUMBER
+                hint = "10"
+            }
+            dialogView.addView(bottomCropInput)
+            
+            // Language setting
+            val languageLabel = TextView(this).apply {
+                text = "🌍 Język (pl_PL lub en_US):"
+                textSize = 14f
+                setPadding(0, 16, 0, 8)
+            }
+            dialogView.addView(languageLabel)
+            
+            val languageInput = EditText(this).apply {
+                setText(prefsManager.getScreenReaderLanguage())
+                hint = "pl_PL"
+            }
+            dialogView.addView(languageInput)
+            
+            // Text truncate setting
+            val truncateLabel = TextView(this).apply {
+                text = "✂️ Maksymalna długość tekstu (znaki):"
+                textSize = 14f
+                setPadding(0, 16, 0, 8)
+            }
+            dialogView.addView(truncateLabel)
+            
+            val maxLengthInput = EditText(this).apply {
+                setText(prefsManager.getScreenReaderMaxTextLength().toString())
+                inputType = android.text.InputType.TYPE_CLASS_NUMBER
+                hint = "250"
+            }
+            dialogView.addView(maxLengthInput)
+            
+            // Truncate enabled checkbox
+            val truncateEnabledLabel = TextView(this).apply {
+                text = "🔄 Skracać długie teksty:"
+                textSize = 14f
+                setPadding(0, 16, 0, 8)
+            }
+            dialogView.addView(truncateEnabledLabel)
+            
+            val truncateCheckbox = android.widget.CheckBox(this).apply {
+                isChecked = prefsManager.isScreenReaderTextTruncateEnabled()
+                text = "Włącz skracanie tekstów"
+            }
+            dialogView.addView(truncateCheckbox)
+            
+            AlertDialog.Builder(this)
+                .setView(dialogView)
+                .setPositiveButton("💾 Zapisz") { _, _ ->
+                    try {
+                        // Save settings
+                        val interval = intervalInput.text.toString().toIntOrNull() ?: 10
+                        val rate = rateInput.text.toString().toFloatOrNull() ?: 3.0f
+                        val topCrop = topCropInput.text.toString().toIntOrNull() ?: 10
+                        val bottomCrop = bottomCropInput.text.toString().toIntOrNull() ?: 10
+                        val language = languageInput.text.toString().ifEmpty { "pl_PL" }
+                        val maxLength = maxLengthInput.text.toString().toIntOrNull() ?: 250
+                        val truncateEnabled = truncateCheckbox.isChecked
+                        
+                        prefsManager.setScreenReaderInterval(interval)
+                        prefsManager.setScreenReaderSpeechRate(rate)
+                        prefsManager.setScreenReaderTopCrop(topCrop)
+                        prefsManager.setScreenReaderBottomCrop(bottomCrop)
+                        prefsManager.setScreenReaderLanguage(language)
+                        prefsManager.setScreenReaderMaxTextLength(maxLength)
+                        prefsManager.setScreenReaderTextTruncateEnabled(truncateEnabled)
+                        
+                        Toast.makeText(this, "✅ Ustawienia Screen Reader zapisane", Toast.LENGTH_SHORT).show()
+                        systemLogger.i(TAG, "Screen Reader settings saved: ${interval}s, ${rate}x, top:${topCrop}%, bottom:${bottomCrop}%, lang:$language")
+                        
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Error saving screen reader settings", e)
+                        Toast.makeText(this, "Błąd zapisywania: ${e.message}", Toast.LENGTH_LONG).show()
+                    }
+                }
+                .setNegativeButton("Anuluj", null)
+                .setNeutralButton("🔄 Resetuj") { _, _ ->
+                    prefsManager.setScreenReaderInterval(10)
+                    prefsManager.setScreenReaderSpeechRate(3.0f)
+                    prefsManager.setScreenReaderTopCrop(10)
+                    prefsManager.setScreenReaderBottomCrop(10)
+                    prefsManager.setScreenReaderLanguage("pl_PL")
+                    prefsManager.setScreenReaderMaxTextLength(250)
+                    prefsManager.setScreenReaderTextTruncateEnabled(true)
+                    Toast.makeText(this, "🔄 Ustawienia zresetowane", Toast.LENGTH_SHORT).show()
+                }
+                .show()
+                
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error in showScreenReaderSettings", e)
+            Toast.makeText(this, "Błąd ustawień: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
     

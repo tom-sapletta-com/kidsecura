@@ -28,7 +28,6 @@ import com.parentalcontrol.mvp.utils.NotificationHelper
 import com.parentalcontrol.mvp.utils.AppMonitor
 import com.parentalcontrol.mvp.utils.FileLogger
 import com.parentalcontrol.mvp.utils.PreferencesManager
-import com.parentalcontrol.mvp.utils.TextToSpeechManager
 import kotlinx.coroutines.*
 import java.io.File
 import java.io.FileOutputStream
@@ -71,7 +70,6 @@ class ScreenCaptureService : Service() {
     private lateinit var appMonitor: AppMonitor
     private lateinit var fileLogger: FileLogger
     private lateinit var prefsManager: PreferencesManager
-    private lateinit var ttsManager: TextToSpeechManager
     
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     
@@ -87,7 +85,6 @@ class ScreenCaptureService : Service() {
         appMonitor = AppMonitor(this)
         fileLogger = FileLogger(this)
         prefsManager = PreferencesManager(this)
-        ttsManager = TextToSpeechManager(this)
         
         // Loguj start serwisu
         serviceScope.launch {
@@ -208,10 +205,10 @@ class ScreenCaptureService : Service() {
                 captureScreen()
                 
                 // Różne interwały dla różnych trybów
-                val interval = when {
-                    prefsManager.isTtsEnabled() -> 2 // 2 sekundy dla TTS
-                    prefsManager.isDemoModeEnabled() -> 3 // 3 sekundy dla demo
-                    else -> captureInterval // normalny interwał z ustawień
+                val interval = if (prefsManager.isDemoModeEnabled()) {
+                    3 // 3 sekundy dla demo
+                } else {
+                    captureInterval // normalny interwał z ustawień
                 }
                 
                 handler.postDelayed(this, (interval * 1000).toLong())
@@ -298,11 +295,6 @@ class ScreenCaptureService : Service() {
                 // DEMO MODE: Loguj WSZYSTKIE ekstraktowane teksty
                 if (prefsManager.isDemoModeEnabled()) {
                     logDemoOCRText(analysisResult, currentApp.appName)
-                }
-                
-                // TTS MODE: Czytaj tekst na głos
-                if (prefsManager.isTtsEnabled()) {
-                    speakScreenText(analysisResult, currentApp.appName)
                 }
                 
                 // Jeśli wykryto podejrzaną treść
@@ -424,51 +416,6 @@ class ScreenCaptureService : Service() {
         }
     }
     
-    /**
-     * Czyta tekst z ekranu na głos
-     */
-    private fun speakScreenText(analysisResult: AnalysisResult, appName: String) {
-        try {
-            val extractedText = analysisResult.extractedText?.trim() ?: ""
-            
-            // Sprawdź czy TTS jest gotowy
-            if (!ttsManager.isReady()) {
-                Log.w(TAG, "🔊 TTS not ready yet")
-                return
-            }
-            
-            if (extractedText.isNotEmpty()) {
-                // Przefiltruj tekst - usuń bardzo krótkie słowa i znaki specjalne
-                val cleanText = extractedText
-                    .split("\\s+".toRegex())
-                    .filter { word -> word.length > 2 && word.matches("[a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ]+".toRegex()) }
-                    .joinToString(" ")
-                
-                if (cleanText.isNotEmpty()) {
-                    Log.d(TAG, "🔊 TTS reading: $appName - ${cleanText.take(50)}...")
-                    
-                    // Czytaj z prefiksem aplikacji
-                    ttsManager.speakScreenText(cleanText, appName)
-                    
-                    // Loguj TTS activity
-                    serviceScope.launch {
-                        fileLogger.logServiceEvent("TTS: Read ${cleanText.length} chars from $appName")
-                    }
-                } else {
-                    Log.d(TAG, "🔊 TTS: No readable text after filtering in $appName")
-                }
-            } else {
-                // Czasem informuj o braku tekstu
-                if (System.currentTimeMillis() % 10 == 0L) { // Co ~10 próbek
-                    Log.d(TAG, "🔊 TTS: No text detected in $appName")
-                    ttsManager.speakText("Brak tekstu w aplikacji $appName")
-                }
-            }
-            
-        } catch (e: Exception) {
-            Log.e(TAG, "❌ Error in TTS speech", e)
-        }
-    }
     
     private fun cleanup() {
         captureRunnable?.let { handler.removeCallbacks(it) }
@@ -493,12 +440,6 @@ class ScreenCaptureService : Service() {
             fileLogger.cleanOldLogs()
         }
         
-        // Zatrzymaj TTS
-        try {
-            ttsManager.cleanup()
-        } catch (e: Exception) {
-            Log.e(TAG, "Error cleaning TTS", e)
-        }
         
         cleanup()
         serviceScope.cancel()

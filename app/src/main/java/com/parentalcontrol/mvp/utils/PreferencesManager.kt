@@ -138,6 +138,29 @@ class PreferencesManager(context: Context) {
     fun isDemoModeEnabled(): Boolean = prefs.getBoolean("demo_mode_enabled", false)
     fun setDemoModeEnabled(enabled: Boolean) = prefs.edit().putBoolean("demo_mode_enabled", enabled).apply()
     
+    // ===== SCREEN READER SETTINGS =====
+    
+    fun getScreenReaderInterval(): Int = prefs.getInt("screen_reader_interval", 10)
+    fun setScreenReaderInterval(interval: Int) = prefs.edit().putInt("screen_reader_interval", interval).apply()
+    
+    fun getScreenReaderSpeechRate(): Float = prefs.getFloat("screen_reader_speech_rate", 3.0f)
+    fun setScreenReaderSpeechRate(rate: Float) = prefs.edit().putFloat("screen_reader_speech_rate", rate).apply()
+    
+    fun getScreenReaderTopCrop(): Int = prefs.getInt("screen_reader_top_crop", 10)
+    fun setScreenReaderTopCrop(percent: Int) = prefs.edit().putInt("screen_reader_top_crop", percent).apply()
+    
+    fun getScreenReaderBottomCrop(): Int = prefs.getInt("screen_reader_bottom_crop", 10)
+    fun setScreenReaderBottomCrop(percent: Int) = prefs.edit().putInt("screen_reader_bottom_crop", percent).apply()
+    
+    fun getScreenReaderLanguage(): String = prefs.getString("screen_reader_language", "pl_PL") ?: "pl_PL"
+    fun setScreenReaderLanguage(language: String) = prefs.edit().putString("screen_reader_language", language).apply()
+    
+    fun getScreenReaderMaxTextLength(): Int = prefs.getInt("screen_reader_max_text_length", 250)
+    fun setScreenReaderMaxTextLength(length: Int) = prefs.edit().putInt("screen_reader_max_text_length", length).apply()
+    
+    fun isScreenReaderTextTruncateEnabled(): Boolean = prefs.getBoolean("screen_reader_truncate_enabled", true)
+    fun setScreenReaderTextTruncateEnabled(enabled: Boolean) = prefs.edit().putBoolean("screen_reader_truncate_enabled", enabled).apply()
+    
     
     fun getStealthLastAccess(): Long = prefs.getLong(KEY_STEALTH_LAST_ACCESS, 0L)
     fun setStealthLastAccess(timestamp: Long) = prefs.edit().putLong(KEY_STEALTH_LAST_ACCESS, timestamp).apply()

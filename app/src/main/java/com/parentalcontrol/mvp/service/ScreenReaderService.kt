@@ -25,7 +25,9 @@ import com.google.mlkit.vision.text.TextRecognizer
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import com.parentalcontrol.mvp.MainActivity
 import com.parentalcontrol.mvp.R
+import com.parentalcontrol.mvp.utils.FileLogger
 import kotlinx.coroutines.*
+import java.io.File
 import java.nio.ByteBuffer
 import java.util.*
 
@@ -61,9 +63,15 @@ class ScreenReaderService : Service(), TextToSpeech.OnInitListener {
     
     private var resultCode = 0
     private var resultData: Intent? = null
-    private var readInterval = 2 // sekund - szybsze dla lepszego UX
-    private var speechRate = 1.0f
+    private var readInterval = 10 // 10 sekund - nowy domyślny interwał
+    private var speechRate = 3.0f // 3x szybciej - nowa domyślna prędkość
     private var language = "pl_PL"
+    private var topCrop = 10 // % górnej części do pominięcia
+    private var bottomCrop = 10 // % dolnej części do pominięcia
+    
+    // Do logowania i wyświetlania
+    private var currentReadingText = ""
+    private lateinit var fileLogger: FileLogger
     
     private val lastReadText = mutableSetOf<String>()
     private val handler = Handler(Looper.getMainLooper())
@@ -84,6 +92,9 @@ class ScreenReaderService : Service(), TextToSpeech.OnInitListener {
         // Inicjalizacja ML Kit Text Recognition
         val options = TextRecognizerOptions.Builder().build()
         textRecognizer = TextRecognition.getClient(options)
+        
+        // Inicjalizacja FileLogger
+        fileLogger = FileLogger(this)
         
         // Pobierz parametry ekranu
         val windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
@@ -110,9 +121,11 @@ class ScreenReaderService : Service(), TextToSpeech.OnInitListener {
                 if (intent != null) {
                     resultCode = intent.getIntExtra("RESULT_CODE", 0)
                     resultData = intent.getParcelableExtra("DATA")
-                    readInterval = intent.getIntExtra("READ_INTERVAL", 2)
-                    speechRate = intent.getFloatExtra("SPEECH_RATE", 1.0f)
+                    readInterval = intent.getIntExtra("READ_INTERVAL", 10)
+                    speechRate = intent.getFloatExtra("SPEECH_RATE", 3.0f)
                     language = intent.getStringExtra("LANGUAGE") ?: "pl_PL"
+                    topCrop = intent.getIntExtra("TOP_CROP", 10)
+                    bottomCrop = intent.getIntExtra("BOTTOM_CROP", 10)
                     
                     if (ttsInitialized) {
                         tts.setSpeechRate(speechRate)
@@ -175,10 +188,16 @@ class ScreenReaderService : Service(), TextToSpeech.OnInitListener {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
         
-        // Zbuduj notyfikację
+        // Zbuduj notyfikację z aktualnie czytanym tekstem
+        val notificationText = if (currentReadingText.isNotEmpty()) {
+            "Czyta: ${currentReadingText.take(50)}${if (currentReadingText.length > 50) "..." else ""}"
+        } else {
+            "Czytanie co ${readInterval}s, pomija górne i dolne 10% (auto-stop za 30s)"
+        }
+        
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("🔊 Czytnik Ekranu Aktywny")
-            .setContentText("Czytanie ekranu co $readInterval sekundy (auto-stop za 30s)")
+            .setContentTitle("🔊 Screen Reader 3x Speed")
+            .setContentText(notificationText)
             .setSmallIcon(android.R.drawable.ic_menu_view)
             .setContentIntent(pendingIntent)
             .addAction(android.R.drawable.ic_menu_close_clear_cancel, "🛑 Stop", stopPendingIntent)
@@ -250,27 +269,43 @@ class ScreenReaderService : Service(), TextToSpeech.OnInitListener {
         startPeriodicCapture()
     }
     
-    private suspend fun captureAndReadScreen() = withContext(Dispatchers.IO) {
+    private suspend fun captureAndReadScreen(): Unit = withContext(Dispatchers.IO) {
         try {
-            Log.d(TAG, "📸 Capturing screen for TTS...")
+            val sessionId = System.currentTimeMillis()
+            Log.d(TAG, "📸 Capturing screen for TTS (session: $sessionId)...")
+            
+            // Loguj rozpoczęcie sesji
+            fileLogger.logServiceEvent("🎬 Capture Start: Session $sessionId - interval ${readInterval}s")
             
             val image = imageReader?.acquireLatestImage()
-            if (image != null) {
+            image?.let { img ->
                 try {
+                    Log.d(TAG, "🖼️ Processing image ${img.width}x${img.height}")
+                    
                     // Konwertuj Image na Bitmap
-                    val bitmap = imageToBitmap(image)
-                    image.close()
+                    val bitmap = imageToBitmap(img)
+                    img.close()
+                    
+                    // Loguj szczegóły przetwarzania
+                    fileLogger.logServiceEvent("🔄 Image Processing: ${bitmap.width}x${bitmap.height} -> cropped (top:${topCrop}%, bottom:${bottomCrop}%)")
                     
                     // Wykonaj OCR
+                    Log.d(TAG, "🔍 Starting OCR on cropped image ${bitmap.width}x${bitmap.height}")
                     performOCR(bitmap)
                     
                 } catch (e: Exception) {
                     Log.e(TAG, "❌ Error processing image for TTS", e)
-                    image.close()
+                    fileLogger.logServiceEvent("❌ Image Processing Error: ${e.message}")
+                    img.close()
                 }
             }
+            
+            // Loguj zakończenie sesji
+            fileLogger.logServiceEvent("✅ Capture Complete: Session $sessionId finished")
+            
         } catch (e: Exception) {
             Log.e(TAG, "❌ Error capturing screen for TTS", e)
+            fileLogger.logServiceEvent("❌ Capture Error: ${e.message}")
         }
     }
     
@@ -281,51 +316,151 @@ class ScreenReaderService : Service(), TextToSpeech.OnInitListener {
         val rowStride = planes[0].rowStride
         val rowPadding = rowStride - pixelStride * image.width
         
-        val bitmap = Bitmap.createBitmap(
+        val fullBitmap = Bitmap.createBitmap(
             image.width + rowPadding / pixelStride,
             image.height,
             Bitmap.Config.ARGB_8888
         )
-        bitmap.copyPixelsFromBuffer(buffer)
+        fullBitmap.copyPixelsFromBuffer(buffer)
         
-        // Przytnij bitmap do właściwego rozmiaru
-        return if (rowPadding == 0) {
-            bitmap
+        // Przytnij do właściwego rozmiaru
+        val correctBitmap = if (rowPadding == 0) {
+            fullBitmap
         } else {
-            Bitmap.createBitmap(bitmap, 0, 0, image.width, image.height)
+            Bitmap.createBitmap(fullBitmap, 0, 0, image.width, image.height)
+        }
+        
+        // Przytnij do obszaru zgodnie z ustawieniami
+        val topCropPixels = (correctBitmap.height * topCrop / 100.0).toInt()  // Górne X%
+        val bottomCropPixels = (correctBitmap.height * (100 - bottomCrop) / 100.0).toInt()  // Do (100-Y)%
+        val croppedHeight = bottomCropPixels - topCropPixels
+        
+        Log.d(TAG, "🖼️ Cropping bitmap: original ${correctBitmap.width}x${correctBitmap.height} -> ${correctBitmap.width}x${croppedHeight} (skip top ${topCrop}%, bottom ${bottomCrop}%)")
+        
+        val croppedBitmap = Bitmap.createBitmap(
+            correctBitmap, 
+            0,                    // x - cała szerokość
+            topCropPixels,        // y - od X% wysokości
+            correctBitmap.width,  // width - cała szerokość
+            croppedHeight         // height - obszar między cropami
+        )
+        
+        // Zapisz miniaturkę do logowania
+        saveScreenshotThumbnail(croppedBitmap)
+        
+        // Zwolnij pamięć niepotrzebnych bitmap
+        if (fullBitmap != correctBitmap) {
+            fullBitmap.recycle()
+        }
+        if (correctBitmap != croppedBitmap) {
+            correctBitmap.recycle()
+        }
+        
+        return croppedBitmap
+    }
+    
+    /**
+     * Zapisuje miniaturkę ekranu do celów debugowania
+     */
+    private fun saveScreenshotThumbnail(bitmap: Bitmap) {
+        try {
+            val timestamp = System.currentTimeMillis()
+            val fileName = "screen_reader_${timestamp}.jpg"
+            
+            val downloadsDir = File("/storage/emulated/0/Download/KidSecura/ScreenReader")
+            if (!downloadsDir.exists()) {
+                downloadsDir.mkdirs()
+            }
+            
+            val file = File(downloadsDir, fileName)
+            
+            // Stwórz mniejszą miniaturkę (max 400px szerokości)
+            val maxWidth = 400
+            val scale = if (bitmap.width > maxWidth) {
+                maxWidth.toFloat() / bitmap.width.toFloat()
+            } else {
+                1.0f
+            }
+            
+            val thumbnailWidth = (bitmap.width * scale).toInt()
+            val thumbnailHeight = (bitmap.height * scale).toInt()
+            val thumbnail = Bitmap.createScaledBitmap(bitmap, thumbnailWidth, thumbnailHeight, true)
+            
+            file.outputStream().use { out ->
+                thumbnail.compress(Bitmap.CompressFormat.JPEG, 80, out)
+                out.flush()
+            }
+            
+            Log.d(TAG, "📷 Thumbnail saved: $fileName (${thumbnailWidth}x${thumbnailHeight})")
+            
+            if (thumbnail != bitmap) {
+                thumbnail.recycle()
+            }
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error saving thumbnail", e)
         }
     }
     
-    private suspend fun performOCR(bitmap: Bitmap) = withContext(Dispatchers.IO) {
-        try {
-            val inputImage = InputImage.fromBitmap(bitmap, 0)
-            
-            textRecognizer.process(inputImage)
-                .addOnSuccessListener { visionText ->
-                    processRecognizedText(visionText.text)
-                }
-                .addOnFailureListener { e ->
-                    Log.e(TAG, "❌ OCR failed for TTS", e)
-                }
-        } catch (e: Exception) {
-            Log.e(TAG, "❌ Error performing OCR for TTS", e)
+    private suspend fun performOCR(bitmap: Bitmap) {
+        withContext(Dispatchers.IO) {
+            try {
+                val inputImage = InputImage.fromBitmap(bitmap, 0)
+                
+                textRecognizer.process(inputImage)
+                    .addOnSuccessListener { visionText ->
+                        processRecognizedText(visionText.text)
+                    }
+                    .addOnFailureListener { e ->
+                        Log.e(TAG, "❌ OCR failed for TTS", e)
+                    }
+            } catch (e: Exception) {
+                Log.e(TAG, "❌ Error performing OCR for TTS", e)
+            }
         }
     }
     
     private fun processRecognizedText(text: String) {
+        val timestamp = System.currentTimeMillis()
+        
+        // Loguj rozpoczęcie przetwarzania
+        serviceScope.launch {
+            fileLogger.logServiceEvent("🔍 OCR Start: Processing ${text.length} characters")
+        }
+        
         if (text.isBlank()) {
             Log.d(TAG, "🔊 No text detected on screen")
+            serviceScope.launch {
+                fileLogger.logServiceEvent("⚠️ OCR Result: No text detected")
+            }
             return
         }
         
-        // Podziel tekst na linie i oczyść
-        val lines = text.split("\n")
-            .map { it.trim() }
-            .filter { it.isNotEmpty() && it.length > 2 } // Tylko dłuższe linie
-            .filter { line -> 
-                // Filtruj tylko sensowny tekst (polskie znaki, cyfry, podstawowe znaki)
-                line.matches(Regex(".*[a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ0-9].*"))
-            }
+        Log.d(TAG, "📝 Raw OCR text (${text.length} chars): ${text.take(100)}...")
+        
+        // Loguj do FileLogger pełny surowy tekst
+        serviceScope.launch {
+            fileLogger.logServiceEvent("📝 RAW OCR TEXT (${text.length} chars): '$text'")
+        }
+        
+        // Podziel tekst na linie i oczyść - ale zachowaj więcej tekstu
+        val allLines = text.split("\n").map { it.trim() }
+        val nonEmptyLines = allLines.filter { it.isNotEmpty() && it.length > 1 }
+        val filteredLines = nonEmptyLines.filter { line -> 
+            // Filtruj tylko sensowny tekst (polskie znaki, cyfry, podstawowe znaki)
+            line.matches(Regex(".*[a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ0-9\\s.,!?-].*"))
+        }
+        
+        Log.d(TAG, "✂️ Text processing: ${allLines.size} total lines -> ${nonEmptyLines.size} non-empty -> ${filteredLines.size} filtered")
+        Log.d(TAG, "✂️ Filtered lines: ${filteredLines.take(5)}")
+        
+        // Loguj szczegóły filtrowania
+        serviceScope.launch {
+            fileLogger.logServiceEvent("✂️ TEXT FILTERING: ${allLines.size} total -> ${nonEmptyLines.size} non-empty -> ${filteredLines.size} valid lines")
+            fileLogger.logServiceEvent("✂️ FILTERED LINES: ${filteredLines.joinToString(" | ")}")
+        }
+        
+        val lines = filteredLines
         
         // Znajdź nowy tekst (którego jeszcze nie przeczytaliśmy)
         val newLines = lines.filter { line ->
@@ -335,17 +470,72 @@ class ScreenReaderService : Service(), TextToSpeech.OnInitListener {
         if (newLines.isNotEmpty()) {
             // Zaktualizuj zbiór przeczytanego tekstu
             lastReadText.clear()
-            lastReadText.addAll(lines.takeLast(5)) // Zapamiętaj ostatnie 5 linii
+            lastReadText.addAll(lines.takeLast(10)) // Zwiększyłem z 5 na 10
             
-            // Przeczytaj nowy tekst (max 2 linie, żeby nie było za długo)
-            val textToRead = newLines.take(2).joinToString(". ")
+            // PRZECZYTAJ WIĘCEJ TEKSTU - do 250 znaków (zwiększamy próg)
+            var textToRead = ""
+            var charCount = 0
+            val targetLength = 250
             
-            if (textToRead.length > 10) { // Tylko jeśli tekst ma sens
-                speakText("Wykryto tekst: $textToRead")
-                Log.d(TAG, "🔊 Reading text: $textToRead")
+            // Loguj szczegóły budowania tekstu
+            Log.d(TAG, "🔧 Building text from ${newLines.size} new lines, target: $targetLength chars")
+            serviceScope.launch {
+                fileLogger.logServiceEvent("🔧 TEXT BUILDING: ${newLines.size} new lines available, target: $targetLength chars")
+            }
+            
+            for ((index, line) in newLines.withIndex()) {
+                val lineWithSeparator = if (textToRead.isEmpty()) line else ". $line"
+                val wouldBeLength = charCount + lineWithSeparator.length
+                
+                Log.d(TAG, "🔧 Line $index: '$line' (${line.length} chars) -> total would be $wouldBeLength")
+                
+                if (wouldBeLength <= targetLength) {
+                    textToRead += lineWithSeparator
+                    charCount += lineWithSeparator.length
+                    Log.d(TAG, "✅ Added line $index, total now: $charCount chars")
+                } else {
+                    Log.d(TAG, "❌ Skipping line $index - would exceed $targetLength limit ($wouldBeLength chars)")
+                    // NOWA LOGIKA: Jeśli mamy jeszcze miejsce, dodaj skróconą wersję
+                    val remainingSpace = targetLength - charCount
+                    if (remainingSpace > 20) { // Jeśli zostało co najmniej 20 znaków
+                        val truncatedLine = line.take(remainingSpace - 3) + "..."
+                        textToRead += if (textToRead.isEmpty()) truncatedLine else ". $truncatedLine"
+                        Log.d(TAG, "📝 Added truncated line: '${truncatedLine}'")
+                    }
+                    break
+                }
+            }
+            
+            // Loguj finalne wyniki
+            serviceScope.launch {
+                fileLogger.logServiceEvent("🔧 FINAL TEXT BUILD: ${textToRead.length} chars from ${newLines.size} lines")
+            }
+            
+            if (textToRead.length > 5) { // Zmniejszyłem próg z 10 na 5
+                currentReadingText = textToRead
+                
+                // Loguj szczegóły czytania
+                serviceScope.launch {
+                    fileLogger.logServiceEvent("🔊 TTS Reading: ${textToRead.length} chars - \"${textToRead.take(50)}...\"")
+                }
+                
+                // Zaktualizuj notyfikację z aktualnie czytanym tekstem
+                updateNotification()
+                
+                // Czytaj bezpośrednio bez prefiksu
+                speakTextDirect(textToRead)
+                Log.d(TAG, "🔊 Reading ${textToRead.length} chars: $textToRead")
+                
+                // Zapisz też do FileLogger żeby było widoczne w Podglądzie Logów
+                serviceScope.launch {
+                    fileLogger.logServiceEvent("🔊 READING: ${textToRead.length} chars - '$textToRead'")
+                }
             }
         } else {
             Log.d(TAG, "🔊 No new text to read")
+            serviceScope.launch {
+                fileLogger.logServiceEvent("🔄 OCR Result: No new text (${lines.size} lines already read)")
+            }
         }
     }
     
@@ -354,7 +544,7 @@ class ScreenReaderService : Service(), TextToSpeech.OnInitListener {
             // Zatrzymaj poprzednie czytanie
             tts.stop()
             
-            // Skróć tekst jeśli za długi
+            // Skróć tekst jeśli za długi (używa starych ustawień dla kompatybilności)
             val textToSpeak = if (text.length > 150) {
                 text.take(150) + "... i dalej"
             } else {
@@ -370,6 +560,68 @@ class ScreenReaderService : Service(), TextToSpeech.OnInitListener {
             }
             
             Log.d(TAG, "🔊 TTS speaking: ${textToSpeak.take(50)}...")
+        }
+    }
+    
+    /**
+     * Aktualizuje notyfikację z aktualnie czytanym tekstem
+     */
+    private fun updateNotification() {
+        try {
+            val updatedNotification = createNotification()
+            val notificationManager = getSystemService(NotificationManager::class.java)
+            notificationManager.notify(NOTIFICATION_ID, updatedNotification)
+            Log.d(TAG, "📱 Notification updated with reading text")
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error updating notification", e)
+        }
+    }
+    
+    /**
+     * Czyta tekst bezpośrednio z konfigurowalnymi ustawieniami skracania
+     */
+    private fun speakTextDirect(text: String) {
+        if (ttsInitialized && text.isNotBlank()) {
+            // Loguj rozpoczęcie TTS
+            serviceScope.launch {
+                fileLogger.logServiceEvent("🎤 TTS Start: Speaking ${text.length} chars at ${speechRate}x speed")
+            }
+            
+            // Zatrzymaj poprzednie czytanie
+            tts.stop()
+            
+            // Pobierz ustawienia skracania z preferencji (domyślne: skracaj do 250 znaków)
+            val maxLength = 250 // Stała wartość jak prosił user
+            val shouldTruncate = true // Domyślnie skracaj
+            
+            // Skróć tekst jeśli włączone skracanie i tekst jest za długi
+            val textToSpeak = if (shouldTruncate && text.length > maxLength) {
+                text.take(maxLength) + "..."
+            } else {
+                text
+            }
+            
+            // Rozpocznij nowe czytanie
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                tts.speak(textToSpeak, TextToSpeech.QUEUE_FLUSH, null, "utterance_${System.currentTimeMillis()}")
+            } else {
+                @Suppress("DEPRECATION")
+                tts.speak(textToSpeak, TextToSpeech.QUEUE_FLUSH, null)
+            }
+            
+            Log.d(TAG, "🔊 TTS speaking directly (${textToSpeak.length} chars): ${textToSpeak.take(50)}...")
+            
+            // Loguj szczegóły TTS do FileLogger
+            serviceScope.launch {
+                fileLogger.logServiceEvent("🎤 TTS SPEAKING: '${textToSpeak}' (${textToSpeak.length} chars at ${speechRate}x)")
+            }
+            
+            // Loguj zakończenie TTS (przybliżony czas)
+            serviceScope.launch {
+                val estimatedDurationMs = (textToSpeak.length * 50 / speechRate).toLong() // Szacowana długość
+                delay(estimatedDurationMs)
+                fileLogger.logServiceEvent("✅ TTS Complete: Finished speaking '${textToSpeak.take(30)}...'")
+            }
         }
     }
     
@@ -404,9 +656,9 @@ class ScreenReaderService : Service(), TextToSpeech.OnInitListener {
             setTtsLanguage(language)
             
             // Powiedz że usługa się uruchomiła
-            speakText("Czytnik ekranu uruchomiony. Czytanie co $readInterval sekundy.")
+            speakText("Screen Reader aktywny. Szybkość 3x, co $readInterval sekund.")
             
-            Log.d(TAG, "✅ TTS initialized successfully")
+            Log.d(TAG, "✅ TTS initialized successfully (3x speed, 10s interval, crop top+bottom 10%)")
         } else {
             Log.e(TAG, "❌ TTS initialization failed")
         }
