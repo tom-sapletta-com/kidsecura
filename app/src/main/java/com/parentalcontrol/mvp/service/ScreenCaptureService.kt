@@ -300,6 +300,11 @@ class ScreenCaptureService : Service() {
                     logDemoOCRText(analysisResult, currentApp.appName)
                 }
                 
+                // TTS MODE: Czytaj tekst na głos
+                if (prefsManager.isTtsEnabled()) {
+                    speakScreenText(analysisResult, currentApp.appName)
+                }
+                
                 // Jeśli wykryto podejrzaną treść
                 if (analysisResult.isSuspicious) {
                     val event = MonitoringEvent(
@@ -419,6 +424,52 @@ class ScreenCaptureService : Service() {
         }
     }
     
+    /**
+     * Czyta tekst z ekranu na głos
+     */
+    private fun speakScreenText(analysisResult: AnalysisResult, appName: String) {
+        try {
+            val extractedText = analysisResult.extractedText?.trim() ?: ""
+            
+            // Sprawdź czy TTS jest gotowy
+            if (!ttsManager.isReady()) {
+                Log.w(TAG, "🔊 TTS not ready yet")
+                return
+            }
+            
+            if (extractedText.isNotEmpty()) {
+                // Przefiltruj tekst - usuń bardzo krótkie słowa i znaki specjalne
+                val cleanText = extractedText
+                    .split("\\s+".toRegex())
+                    .filter { word -> word.length > 2 && word.matches("[a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ]+".toRegex()) }
+                    .joinToString(" ")
+                
+                if (cleanText.isNotEmpty()) {
+                    Log.d(TAG, "🔊 TTS reading: $appName - ${cleanText.take(50)}...")
+                    
+                    // Czytaj z prefiksem aplikacji
+                    ttsManager.speakScreenText(cleanText, appName)
+                    
+                    // Loguj TTS activity
+                    serviceScope.launch {
+                        fileLogger.logServiceEvent("TTS: Read ${cleanText.length} chars from $appName")
+                    }
+                } else {
+                    Log.d(TAG, "🔊 TTS: No readable text after filtering in $appName")
+                }
+            } else {
+                // Czasem informuj o braku tekstu
+                if (System.currentTimeMillis() % 10 == 0L) { // Co ~10 próbek
+                    Log.d(TAG, "🔊 TTS: No text detected in $appName")
+                    ttsManager.speakText("Brak tekstu w aplikacji $appName")
+                }
+            }
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error in TTS speech", e)
+        }
+    }
+    
     private fun cleanup() {
         captureRunnable?.let { handler.removeCallbacks(it) }
         
@@ -440,6 +491,13 @@ class ScreenCaptureService : Service() {
         serviceScope.launch {
             fileLogger.logServiceEvent("Service stopped")
             fileLogger.cleanOldLogs()
+        }
+        
+        // Zatrzymaj TTS
+        try {
+            ttsManager.cleanup()
+        } catch (e: Exception) {
+            Log.e(TAG, "Error cleaning TTS", e)
         }
         
         cleanup()
