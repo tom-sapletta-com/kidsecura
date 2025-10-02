@@ -28,6 +28,7 @@ import com.parentalcontrol.mvp.utils.NotificationHelper
 import com.parentalcontrol.mvp.utils.AppMonitor
 import com.parentalcontrol.mvp.utils.FileLogger
 import com.parentalcontrol.mvp.utils.PreferencesManager
+import com.parentalcontrol.mvp.utils.TextToSpeechManager
 import kotlinx.coroutines.*
 import java.io.File
 import java.io.FileOutputStream
@@ -70,6 +71,7 @@ class ScreenCaptureService : Service() {
     private lateinit var appMonitor: AppMonitor
     private lateinit var fileLogger: FileLogger
     private lateinit var prefsManager: PreferencesManager
+    private lateinit var ttsManager: TextToSpeechManager
     
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     
@@ -85,6 +87,7 @@ class ScreenCaptureService : Service() {
         appMonitor = AppMonitor(this)
         fileLogger = FileLogger(this)
         prefsManager = PreferencesManager(this)
+        ttsManager = TextToSpeechManager(this)
         
         // Loguj start serwisu
         serviceScope.launch {
@@ -204,11 +207,11 @@ class ScreenCaptureService : Service() {
             override fun run() {
                 captureScreen()
                 
-                // W trybie demo używaj krótszego interwału (3 sekundy)
-                val interval = if (prefsManager.isDemoModeEnabled()) {
-                    3 // 3 sekundy dla demo
-                } else {
-                    captureInterval // normalny interwał z ustawień
+                // Różne interwały dla różnych trybów
+                val interval = when {
+                    prefsManager.isTtsEnabled() -> 2 // 2 sekundy dla TTS
+                    prefsManager.isDemoModeEnabled() -> 3 // 3 sekundy dla demo
+                    else -> captureInterval // normalny interwał z ustawień
                 }
                 
                 handler.postDelayed(this, (interval * 1000).toLong())

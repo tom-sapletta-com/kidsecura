@@ -504,6 +504,112 @@ class MainActivity : AppCompatActivity() {
         }
     }
     
+    /**
+     * Uruchamia czytanie ekranu na głos
+     */
+    private fun startScreenReader() {
+        try {
+            Log.d(TAG, "🔊 startScreenReader() - START")
+            systemLogger.i(TAG, "Starting Screen Reader TTS mode")
+            
+            AlertDialog.Builder(this)
+                .setTitle("🔊 Czytaj Ekran Na Głos")
+                .setMessage("""
+                    📢 SCREEN READER AKTYWNY
+                    
+                    Aplikacja będzie:
+                    ✅ Przechwytywać ekran co 2 sekundy
+                    ✅ Czytać wykryty tekst na głos
+                    ✅ Automatycznie stop po 30 sekundach
+                    ✅ Lub możliwość zatrzymania ręcznego
+                    
+                    🔊 Głośność będzie ustawiona na maksimum
+                    
+                    ⚠️ UWAGA: Może zakłócać inne dźwięki
+                    
+                    Rozpocząć czytanie?
+                """.trimIndent())
+                .setPositiveButton("🔊 Rozpocznij Czytanie") { _, _ ->
+                    try {
+                        // Włącz tryb TTS w preferencjach
+                        prefsManager.setTtsEnabled(true)
+                        
+                        // Uruchom z trybem TTS
+                        startTtsScreenCapture()
+                        
+                        Toast.makeText(this, 
+                            "🔊 SCREEN READER AKTYWNY\nAutomatyczny stop za 30s", 
+                            Toast.LENGTH_LONG).show()
+                            
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Error starting TTS", e)
+                        Toast.makeText(this, "Błąd TTS: ${e.message}", Toast.LENGTH_LONG).show()
+                    }
+                }
+                .setNegativeButton("Anuluj", null)
+                .setNeutralButton("🛑 Stop TTS") { _, _ ->
+                    stopScreenReader()
+                }
+                .show()
+                
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error in startScreenReader", e)
+            systemLogger.e(TAG, "Error starting screen reader", e)
+            Toast.makeText(this, "Błąd Screen Reader: ${e.message}", Toast.LENGTH_LONG).show()
+        }
+    }
+    
+    /**
+     * Uruchamia przechwytywanie ekranu z TTS
+     */
+    private fun startTtsScreenCapture() {
+        try {
+            Log.d(TAG, "🔊 startTtsScreenCapture() - TTS mode")
+            
+            if (!isServiceRunning) {
+                // Poproś o pozwolenie na przechwytywanie ekranu
+                val captureIntent = mediaProjectionManager.createScreenCaptureIntent()
+                projectionLauncher.launch(captureIntent)
+                
+                // Automatyczny stop po 30 sekundach
+                Handler(Looper.getMainLooper()).postDelayed({
+                    stopScreenReader()
+                }, 30000)
+                
+            } else {
+                Toast.makeText(this, "⚠️ Monitoring już działa", Toast.LENGTH_SHORT).show()
+            }
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error starting TTS screen capture", e)
+            throw e
+        }
+    }
+    
+    /**
+     * Zatrzymuje czytanie ekranu
+     */
+    private fun stopScreenReader() {
+        try {
+            Log.d(TAG, "🛑 stopScreenReader() - Stopping TTS")
+            
+            // Wyłącz tryb TTS
+            prefsManager.setTtsEnabled(false)
+            
+            // Zatrzymaj monitoring jeśli działa
+            if (isServiceRunning) {
+                stopMonitoring()
+            }
+            
+            Toast.makeText(this, "🛑 Screen Reader zatrzymany", Toast.LENGTH_SHORT).show()
+            systemLogger.i(TAG, "Screen Reader stopped")
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error stopping screen reader", e)
+            Toast.makeText(this, "Błąd zatrzymywania: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+    
     private fun updateServiceStatus() {
         isServiceRunning = ScreenCaptureService.isRunning
         updateUI(isServiceRunning)
