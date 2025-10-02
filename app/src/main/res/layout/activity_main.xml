@@ -225,6 +225,16 @@
             android:textStyle="bold"
             android:backgroundTint="@color/warning" />
 
+        <!-- TEXT TO SPEECH - Screen Reader -->
+        <Button
+            android:id="@+id/btnScreenReader"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="🔊 Czytaj Ekran Na Głos (30s)"
+            android:layout_marginBottom="8dp"
+            android:textStyle="bold"
+            android:backgroundTint="@color/info" />
+
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

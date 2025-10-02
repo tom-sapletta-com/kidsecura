@@ -308,6 +308,21 @@ class MainActivity : AppCompatActivity() {
                     Toast.makeText(this@MainActivity, "Błąd Demo Monitorowania: ${e.message}", Toast.LENGTH_LONG).show()
                 }
             }
+            
+            // SCREEN READER TTS
+            Log.d(TAG, "🔊 Setting up Screen Reader button")
+            btnScreenReader.setOnClickListener {
+                try {
+                    Log.d(TAG, "🔊 btnScreenReader clicked - Starting Screen Reader")
+                    systemLogger.logButtonClick("Screen Reader", "MainActivity", true)
+                    startScreenReader()
+                    Log.d(TAG, "✅ Screen Reader started")
+                } catch (e: Exception) {
+                    Log.e(TAG, "❌ BŁĄD podczas uruchamiania Screen Reader", e)
+                    systemLogger.logButtonClick("Screen Reader", "MainActivity", false, e.message)
+                    Toast.makeText(this@MainActivity, "Błąd Screen Reader: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+            }
         }
         
         Log.d(TAG, "✅ setupUI() - COMPLETED SUCCESSFULLY")
