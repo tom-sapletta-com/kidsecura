@@ -28,13 +28,14 @@ class LogFileReader(private val context: Context) {
     companion object {
         private const val TAG = "LogFileReader"
         private const val LOG_DIR_NAME = "KidSecura"
-        private const val LOG_FILE_PREFIX = "monitoring_log_"
+        private const val MONITORING_LOG_PREFIX = "monitoring_log_"
+        private const val SYSTEM_LOG_PREFIX = "system_log_"
     }
     
     /**
-     * Pobiera folder logów z Downloads
+     * Pobiera folder logów monitorowania z Downloads
      */
-    private fun getLogDirectory(): File? {
+    private fun getMonitoringLogDirectory(): File? {
         return try {
             val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
             val logDir = File(downloadsDir, LOG_DIR_NAME)
@@ -42,25 +43,68 @@ class LogFileReader(private val context: Context) {
             if (logDir.exists() && logDir.canRead()) {
                 logDir
             } else {
-                Log.w(TAG, "Log directory not accessible: ${logDir.absolutePath}")
+                Log.w(TAG, "Monitoring log directory not accessible: ${logDir.absolutePath}")
                 null
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error accessing log directory", e)
+            Log.e(TAG, "Error accessing monitoring log directory", e)
             null
         }
     }
     
     /**
-     * Pobiera listę wszystkich plików logów
+     * Pobiera folder logów systemowych z internal storage
+     */
+    private fun getSystemLogDirectory(): File? {
+        return try {
+            val logDir = File(context.getExternalFilesDir(null), LOG_DIR_NAME)
+            
+            if (logDir.exists() && logDir.canRead()) {
+                logDir
+            } else {
+                Log.w(TAG, "System log directory not accessible: ${logDir.absolutePath}")
+                null
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error accessing system log directory", e)
+            null
+        }
+    }
+    
+    /**
+     * Pobiera listę wszystkich plików logów z OBUŹ źródeł
+     * (monitoring_log_* + system_log_*)
      */
     suspend fun getLogFiles(): List<File> = withContext(Dispatchers.IO) {
         try {
-            val logDir = getLogDirectory() ?: return@withContext emptyList()
+            val allFiles = mutableListOf<File>()
             
-            logDir.listFiles { file ->
-                file.isFile && file.name.startsWith(LOG_FILE_PREFIX) && file.name.endsWith(".txt")
-            }?.sortedByDescending { it.lastModified() }?.toList() ?: emptyList()
+            // 1. Monitoring logs (Downloads/KidSecura/monitoring_log_*)
+            val monitoringDir = getMonitoringLogDirectory()
+            if (monitoringDir != null) {
+                val monitoringFiles = monitoringDir.listFiles { file ->
+                    file.isFile && file.name.startsWith(MONITORING_LOG_PREFIX) && file.name.endsWith(".txt")
+                }
+                if (monitoringFiles != null) {
+                    allFiles.addAll(monitoringFiles)
+                    Log.d(TAG, "Found ${monitoringFiles.size} monitoring log files")
+                }
+            }
+            
+            // 2. System logs (getExternalFilesDir/KidSecura/system_log_*)
+            val systemDir = getSystemLogDirectory()
+            if (systemDir != null) {
+                val systemFiles = systemDir.listFiles { file ->
+                    file.isFile && file.name.startsWith(SYSTEM_LOG_PREFIX) && file.name.endsWith(".txt")
+                }
+                if (systemFiles != null) {
+                    allFiles.addAll(systemFiles)
+                    Log.d(TAG, "Found ${systemFiles.size} system log files")
+                }
+            }
+            
+            // Sortuj po dacie modyfikacji (najnowsze pierwsze)
+            allFiles.sortedByDescending { it.lastModified() }
             
         } catch (e: Exception) {
             Log.e(TAG, "Error getting log files", e)
@@ -241,8 +285,9 @@ class LogFileReader(private val context: Context) {
      */
     fun canReadLogs(): Boolean {
         return try {
-            val logDir = getLogDirectory()
-            logDir != null && logDir.canRead()
+            val monitoringDir = getMonitoringLogDirectory()
+            val systemDir = getSystemLogDirectory()
+            (monitoringDir != null && monitoringDir.canRead()) || (systemDir != null && systemDir.canRead())
         } catch (e: Exception) {
             false
         }
@@ -255,7 +300,10 @@ class LogFileReader(private val context: Context) {
         try {
             val logFiles = getLogFiles()
             logFiles.map { file ->
-                val dateStr = file.name.removePrefix(LOG_FILE_PREFIX).removeSuffix(".txt")
+                val dateStr = file.name
+                    .removePrefix(MONITORING_LOG_PREFIX)
+                    .removePrefix(SYSTEM_LOG_PREFIX)
+                    .removeSuffix(".txt")
                 val size = file.length()
                 dateStr to size
             }

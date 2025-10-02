@@ -25,6 +25,7 @@ class PairingWizardActivity : AppCompatActivity() {
     
     companion object {
         private const val TAG = "PairingWizardActivity"
+        private const val REQUEST_PAIRING = 1001
     }
     
     // UI Components
@@ -471,56 +472,29 @@ class PairingWizardActivity : AppCompatActivity() {
         isParingInProgress = true
         systemLogger.d(TAG, "🔗 Starting pairing as parent with code: $code")
         
-        lifecycleScope.launch {
-            try {
-                // Simplified pairing for wizard - just simulate connection
-                systemLogger.d(TAG, "🔗 Simulating parent pairing with code: $code")
-                
-                // For now, just mark as paired after short delay
-                kotlinx.coroutines.delay(2000)
-                
-                // Mark as paired in preferences
-                preferencesManager.setDevicePaired(true)
-                
-                systemLogger.d(TAG, "✅ Pairing successful as parent")
-                Toast.makeText(this@PairingWizardActivity, "✅ Połączenie nawiązane!", Toast.LENGTH_SHORT).show()
-                nextButton.isEnabled = true
-                nextButton.text = "🎉 Przejdź do podsumowania"
-            } catch (e: Exception) {
-                systemLogger.e(TAG, "💥 Exception during pairing as parent", e)
-                Toast.makeText(this@PairingWizardActivity, "Błąd: ${e.message}", Toast.LENGTH_LONG).show()
-            } finally {
-                isParingInProgress = false
-            }
-        }
+        // Launch PairingProgressActivity with detailed logging
+        val intent = Intent(this, PairingProgressActivity::class.java)
+        intent.putExtra(PairingProgressActivity.EXTRA_DEVICE_TYPE, DeviceType.PARENT.name)
+        intent.putExtra(PairingProgressActivity.EXTRA_PAIRING_CODE, code)
+        
+        // TODO: Get remote IP from QR code or manual input
+        // For now, this will be handled in PairingProgressActivity
+        
+        systemLogger.i(TAG, "🚀 Launching PairingProgressActivity for parent pairing")
+        startActivityForResult(intent, REQUEST_PAIRING)
     }
     
     private fun startPairingAsChild() {
         isParingInProgress = true
         systemLogger.d(TAG, "🔗 Starting pairing as child with code: $generatedPairingCode")
         
-        lifecycleScope.launch {
-            try {
-                // Simplified pairing for wizard - just simulate waiting
-                systemLogger.d(TAG, "⏳ Simulating child waiting for parent connection")
-                
-                // For now, just mark as paired after short delay
-                kotlinx.coroutines.delay(3000)
-                
-                // Mark as paired in preferences
-                preferencesManager.setDevicePaired(true)
-                
-                systemLogger.d(TAG, "✅ Pairing successful as child")
-                Toast.makeText(this@PairingWizardActivity, "✅ Rodzic połączył się pomyślnie!", Toast.LENGTH_SHORT).show()
-                nextButton.isEnabled = true
-                nextButton.text = "🎉 Przejdź do podsumowania"
-            } catch (e: Exception) {
-                systemLogger.e(TAG, "💥 Exception during pairing as child", e)
-                Toast.makeText(this@PairingWizardActivity, "Błąd: ${e.message}", Toast.LENGTH_LONG).show()
-            } finally {
-                isParingInProgress = false
-            }
-        }
+        // Launch PairingProgressActivity with detailed logging
+        val intent = Intent(this, PairingProgressActivity::class.java)
+        intent.putExtra(PairingProgressActivity.EXTRA_DEVICE_TYPE, DeviceType.CHILD.name)
+        intent.putExtra(PairingProgressActivity.EXTRA_PAIRING_CODE, generatedPairingCode)
+        
+        systemLogger.i(TAG, "🚀 Launching PairingProgressActivity for child pairing")
+        startActivityForResult(intent, REQUEST_PAIRING)
     }
     
     private fun generatePairingCode(): String {
@@ -561,6 +535,28 @@ class PairingWizardActivity : AppCompatActivity() {
         intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK
         startActivity(intent)
         finish()
+    }
+    
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        
+        if (requestCode == REQUEST_PAIRING) {
+            isParingInProgress = false
+            
+            if (resultCode == RESULT_OK) {
+                // Pairing successful
+                systemLogger.i(TAG, "✅ Pairing completed successfully")
+                Toast.makeText(this, "✅ Parowanie zakończone pomyślnie!", Toast.LENGTH_LONG).show()
+                nextButton.isEnabled = true
+                nextButton.text = "🎉 Przejdź do podsumowania"
+            } else {
+                // Pairing failed or cancelled
+                systemLogger.w(TAG, "⚠️ Pairing cancelled or failed")
+                Toast.makeText(this, "Parowanie anulowane lub nie powiodło się", Toast.LENGTH_SHORT).show()
+                nextButton.isEnabled = true
+                nextButton.text = "Spróbuj ponownie"
+            }
+        }
     }
     
     override fun onBackPressed() {

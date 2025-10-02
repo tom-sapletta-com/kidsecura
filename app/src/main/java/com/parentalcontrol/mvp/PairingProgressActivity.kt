@@ -8,6 +8,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.parentalcontrol.mvp.model.DeviceType
 import com.parentalcontrol.mvp.service.PairingService
+import com.parentalcontrol.mvp.utils.NetworkScanner
 import com.parentalcontrol.mvp.utils.PreferencesManager
 import com.parentalcontrol.mvp.utils.SystemLogger
 import kotlinx.coroutines.delay
@@ -32,6 +33,7 @@ class PairingProgressActivity : AppCompatActivity() {
     private lateinit var systemLogger: SystemLogger
     private lateinit var preferencesManager: PreferencesManager
     private lateinit var pairingService: PairingService
+    private lateinit var networkScanner: NetworkScanner
     
     // UI Components
     private lateinit var progressBar: ProgressBar
@@ -57,6 +59,7 @@ class PairingProgressActivity : AppCompatActivity() {
         systemLogger = SystemLogger.getInstance(this)
         preferencesManager = PreferencesManager(this)
         pairingService = PairingService(this)
+        networkScanner = NetworkScanner(this)
         
         // Get pairing parameters
         deviceType = DeviceType.valueOf(
@@ -125,12 +128,8 @@ class PairingProgressActivity : AppCompatActivity() {
             throw IllegalArgumentException("Brak kodu parowania")
         }
         
-        if (remoteIp.isNullOrEmpty()) {
-            throw IllegalArgumentException("Brak adresu IP urządzenia dziecka")
-        }
-        
         // Krok 1: Walidacja kodu
-        updateProgress("Walidacja kodu parowania...", 10)
+        updateProgress("Walidacja kodu parowania...", 5)
         addLog("🔢 Kod parowania: $pairingCode", LogLevel.INFO)
         delay(500)
         
@@ -140,16 +139,48 @@ class PairingProgressActivity : AppCompatActivity() {
         addLog("✅ Kod prawidłowy", LogLevel.SUCCESS)
         
         // Krok 2: Sprawdzenie sieci
-        updateProgress("Sprawdzanie połączenia sieciowego...", 20)
+        updateProgress("Sprawdzanie połączenia sieciowego...", 10)
         addLog("🌐 Sprawdzanie dostępności sieci", LogLevel.INFO)
         delay(500)
         
         if (!isNetworkAvailable()) {
             throw IllegalStateException("Brak połączenia z siecią WiFi")
         }
+        
+        // Pokaż info o sieci
+        val wifiInfo = networkScanner.getWifiInfo()
+        if (wifiInfo != null) {
+            addLog("📶 $wifiInfo", LogLevel.INFO)
+        }
         addLog("✅ Sieć dostępna", LogLevel.SUCCESS)
         
-        // Krok 3: Sprawdzenie IP
+        // Krok 3: Wykrywanie urządzeń w sieci (jeśli nie podano IP)
+        if (remoteIp.isNullOrEmpty()) {
+            updateProgress("Wykrywanie urządzeń w sieci...", 20)
+            addLog("🔍 Szybkie skanowanie sieci WiFi...", LogLevel.INFO)
+            addLog("💡 Szukam urządzeń z otwartym portem parowania (8080)", LogLevel.INFO)
+            
+            val devicesFound = mutableListOf<NetworkScanner.NetworkDevice>()
+            networkScanner.scanForPairingDevices { device ->
+                lifecycleScope.launch {
+                    addLog("📱 Znaleziono: ${device.getDisplayName()}", LogLevel.SUCCESS)
+                    devicesFound.add(device)
+                }
+            }
+            
+            if (devicesFound.isEmpty()) {
+                addLog("⚠️ Nie znaleziono urządzeń z portem parowania", LogLevel.WARNING)
+                addLog("💡 Sprawdź czy urządzenie dziecka ma włączone parowanie", LogLevel.WARNING)
+                throw IllegalStateException("Nie znaleziono urządzeń do sparowania")
+            }
+            
+            // Użyj pierwszego znalezionego urządzenia
+            val targetDevice = devicesFound.first()
+            remoteIp = targetDevice.ip
+            addLog("✅ Wybrano urządzenie: ${targetDevice.getDisplayName()}", LogLevel.SUCCESS)
+        }
+        
+        // Krok 4: Sprawdzenie IP
         updateProgress("Łączenie z urządzeniem dziecka...", 30)
         addLog("📡 Adres IP: $remoteIp:$remotePort", LogLevel.INFO)
         delay(500)
@@ -328,6 +359,10 @@ class PairingProgressActivity : AppCompatActivity() {
         runOnUiThread {
             btnRetry.isEnabled = false
             btnCancel.text = "✅ Zakończ"
+            btnCancel.setOnClickListener {
+                setResult(RESULT_OK)
+                finish()
+            }
             Toast.makeText(this, "Parowanie zakończone pomyślnie!", Toast.LENGTH_LONG).show()
         }
     }
