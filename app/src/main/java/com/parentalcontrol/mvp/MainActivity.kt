@@ -25,6 +25,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.*
 import com.parentalcontrol.mvp.databinding.ActivityMainBinding
+import com.parentalcontrol.mvp.config.PairingConfig
 import com.parentalcontrol.mvp.model.DeviceType
 import com.parentalcontrol.mvp.service.ScreenCaptureService
 import com.parentalcontrol.mvp.utils.PreferencesManager
@@ -964,7 +965,7 @@ class MainActivity : AppCompatActivity() {
                                "🌐 IP: ${device.ip}\n" +
                                (if (device.hostname != null) "📝 Nazwa: ${device.hostname}\n" else "") +
                                "⏱️ Czas odpowiedzi: ${device.responseTime}ms\n" +
-                               "🔌 Port 8888: ${if (device.hasPairingPort) "✅ OTWARTY" else "🔒 Zamknięty"}\n" +
+                               "🔌 Port ${PairingConfig.PAIRING_PORT}: ${if (device.hasPairingPort) "✅ OTWARTY" else "🔒 Zamknięty"}\n" +
                                "━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
                         textSize = 12f
                         setTextIsSelectable(true)
@@ -978,7 +979,7 @@ class MainActivity : AppCompatActivity() {
                 val summaryText = TextView(this).apply {
                     text = "\n📊 PODSUMOWANIE:\n" +
                            "• Wszystkich urządzeń: ${devices.size}\n" +
-                           "• Z otwartym portem 8888: $pairingDevices\n" +
+                           "• Z otwartym portem ${PairingConfig.PAIRING_PORT}: $pairingDevices\n" +
                            (if (pairingDevices > 0) "\n✅ Znaleziono urządzenia gotowe do parowania!" 
                             else "\n⚠️ Brak urządzeń z otwartym portem parowania")
                     textSize = 13f

@@ -3,6 +3,7 @@ package com.parentalcontrol.mvp.utils
 import android.content.Context
 import android.net.wifi.WifiManager
 import android.util.Log
+import com.parentalcontrol.mvp.config.PairingConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -19,9 +20,10 @@ class NetworkScanner(private val context: Context) {
     
     companion object {
         private const val TAG = "NetworkScanner"
-        private const val SCAN_TIMEOUT = 2000 // ms - zwiększone z 500ms na 2s
-        private const val PAIRING_PORT = 8888 // Port używany do parowania
-        private const val MAX_PARALLEL_SCANS = 50 // Maksymalna liczba równoczesnych skanów
+        // Używamy centralnej konfiguracji z PairingConfig
+        private val SCAN_TIMEOUT = PairingConfig.NETWORK_SCAN_TIMEOUT_MS
+        private val PAIRING_PORT = PairingConfig.PAIRING_PORT
+        private val MAX_PARALLEL_SCANS = PairingConfig.MAX_PARALLEL_SCANS
     }
     
     private val systemLogger = SystemLogger.getInstance(context)

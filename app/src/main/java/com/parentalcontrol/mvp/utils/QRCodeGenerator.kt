@@ -13,6 +13,7 @@ import com.google.zxing.EncodeHintType
 import com.google.zxing.MultiFormatWriter
 import com.google.zxing.WriterException
 import com.google.zxing.common.BitMatrix
+import com.parentalcontrol.mvp.config.PairingConfig
 import com.parentalcontrol.mvp.model.DeviceType
 import com.parentalcontrol.mvp.model.PairingData
 import java.net.Inet4Address
@@ -25,8 +26,9 @@ class QRCodeGenerator(private val context: Context) {
     companion object {
         private const val TAG = "QRCodeGenerator"
         private const val QR_CODE_SIZE = 512
-        private const val DEFAULT_PORT = 8888
-        private const val PAIRING_CODE_LENGTH = 6
+        // Używamy centralnej konfiguracji z PairingConfig
+        private val DEFAULT_PORT = PairingConfig.PAIRING_PORT
+        private val PAIRING_CODE_LENGTH = PairingConfig.PAIRING_CODE_LENGTH
     }
     
     private val gson = Gson()

@@ -7,6 +7,7 @@ import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
+import com.parentalcontrol.mvp.config.PairingConfig
 import com.parentalcontrol.mvp.databinding.ActivityPairingBinding
 import com.parentalcontrol.mvp.model.DeviceType
 import com.parentalcontrol.mvp.model.PairingData
@@ -173,7 +174,7 @@ class PairingActivity : AppCompatActivity() {
         
         lifecycleScope.launch {
             try {
-                Log.d(TAG, "🚀 Starting pairing server on port 8888 for CHILD device...")
+                Log.d(TAG, "🚀 Starting pairing server on port ${PairingConfig.PAIRING_PORT} for CHILD device...")
                 
                 // Najpierw zatrzymaj ewentualny poprzedni serwer
                 pairingService.cleanup()
@@ -185,9 +186,9 @@ class PairingActivity : AppCompatActivity() {
                 pairingService.startListeningServer { success, message ->
                     runOnUiThread {
                         if (success) {
-                            Log.d(TAG, "✅ Pairing server started successfully on port 8888")
-                            binding.statusText.text = "✅ Serwer uruchomiony - Port 8888 OTWARTY\nOczekiwanie na połączenie od rodzica..."
-                            Toast.makeText(this@PairingActivity, "✅ Port 8888 otwarty - gotowy do parowania!", Toast.LENGTH_LONG).show()
+                            Log.d(TAG, "✅ Pairing server started successfully on port ${PairingConfig.PAIRING_PORT}")
+                            binding.statusText.text = "✅ Serwer uruchomiony - Port ${PairingConfig.PAIRING_PORT} OTWARTY\nOczekiwanie na połączenie od rodzica..."
+                            Toast.makeText(this@PairingActivity, "✅ Port ${PairingConfig.PAIRING_PORT} otwarty - gotowy do parowania!", Toast.LENGTH_LONG).show()
                         } else {
                             Log.e(TAG, "❌ Failed to start pairing server: $message")
                             binding.statusText.text = "❌ Błąd serwera: $message"

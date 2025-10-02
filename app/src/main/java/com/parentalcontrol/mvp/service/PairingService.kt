@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.util.Log
 import com.google.gson.Gson
+import com.parentalcontrol.mvp.config.PairingConfig
 import com.parentalcontrol.mvp.model.*
 import kotlinx.coroutines.*
 import okhttp3.*
@@ -34,11 +35,12 @@ class PairingService(private val context: Context) {
         private const val PREFS_NAME = "pairing_prefs"
         private const val KEY_PAIRING_DATA = "pairing_data"
         private const val KEY_PAIRING_STATUS = "pairing_status"
-        private const val PAIRING_TIMEOUT = 10000L // 10 seconds (reduced from 30s)
-        private const val HEARTBEAT_INTERVAL = 5000L // 5 seconds (reduced from 10s) 
-        private const val CONNECTION_TIMEOUT = 3000L // 3 seconds (reduced from 5s)
-        private const val READ_TIMEOUT = 2000L // 2 seconds for faster reads
-        private const val WRITE_TIMEOUT = 2000L // 2 seconds for faster writes
+        // Używamy centralnej konfiguracji z PairingConfig
+        private val PAIRING_TIMEOUT = PairingConfig.PAIRING_TIMEOUT_MS
+        private val HEARTBEAT_INTERVAL = PairingConfig.HEARTBEAT_INTERVAL_MS
+        private val CONNECTION_TIMEOUT = PairingConfig.CONNECTION_TIMEOUT_MS.toLong()
+        private val READ_TIMEOUT = PairingConfig.READ_TIMEOUT_MS.toLong()
+        private val WRITE_TIMEOUT = PairingConfig.WRITE_TIMEOUT_MS.toLong()
         
         // Connection pooling constants
         private const val MAX_CONNECTIONS = 5
@@ -107,7 +109,7 @@ class PairingService(private val context: Context) {
     fun startListeningServer(callback: (success: Boolean, message: String?) -> Unit) {
         serviceScope.launch {
             try {
-                Log.d(TAG, "🎧 Starting listening server on port 8888...")
+                Log.d(TAG, "🎧 Starting listening server on port ${PairingConfig.PAIRING_PORT}...")
                 
                 // Zamknij poprzedni serwer jeśli istnieje
                 stopServer()
@@ -118,7 +120,7 @@ class PairingService(private val context: Context) {
                 // Uruchom serwer nasłuchujący
                 startServer()
                 
-                callback(true, "Server started on port 8888")
+                callback(true, "Server started on port ${PairingConfig.PAIRING_PORT}")
                 Log.d(TAG, "✅ Listening server started successfully")
                 
             } catch (e: Exception) {
@@ -198,7 +200,7 @@ class PairingService(private val context: Context) {
             }
             
             // Sprawdź dostępność portu
-            val port = 8888
+            val port = PairingConfig.PAIRING_PORT
             Log.d(TAG, "Attempting to bind to port: $port")
             
             try {
@@ -938,7 +940,7 @@ class PairingService(private val context: Context) {
             val ipAddress = getLocalIPAddress() ?: "127.0.0.1"
             
             // Port serwera
-            val port = 8888
+            val port = PairingConfig.PAIRING_PORT
             
             // Wygeneruj lub pobierz klucz bezpieczeństwa
             val securityKey = getOrGenerateSecurityKey()
@@ -969,7 +971,7 @@ class PairingService(private val context: Context) {
                 deviceName = android.os.Build.MODEL ?: "Unknown Device",
                 deviceType = DeviceType.CHILD,
                 ipAddress = "127.0.0.1",
-                port = 8888,
+                port = PairingConfig.PAIRING_PORT,
                 securityKey = "fallback_key",
                 pairingCode = "000000"
             )

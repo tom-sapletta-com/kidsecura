@@ -7,6 +7,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.parentalcontrol.mvp.config.PairingConfig
 import com.parentalcontrol.mvp.model.DeviceType
 import com.parentalcontrol.mvp.service.PairingService
 import com.parentalcontrol.mvp.utils.NetworkScanner
@@ -72,7 +73,7 @@ class PairingProgressActivity : AppCompatActivity() {
         )
         pairingCode = intent.getStringExtra(EXTRA_PAIRING_CODE)
         remoteIp = intent.getStringExtra(EXTRA_REMOTE_IP)
-        remotePort = intent.getIntExtra(EXTRA_REMOTE_PORT, 8888)
+        remotePort = intent.getIntExtra(EXTRA_REMOTE_PORT, PairingConfig.PAIRING_PORT)
         
         supportActionBar?.title = "Parowanie urządzeń"
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
@@ -180,7 +181,7 @@ class PairingProgressActivity : AppCompatActivity() {
         if (remoteIp.isNullOrEmpty()) {
             updateProgress("Wykrywanie urządzeń w sieci...", 20)
             addLog("🔍 Szybkie skanowanie sieci WiFi...", LogLevel.INFO)
-            addLog("💡 Szukam urządzeń z otwartym portem parowania (8080)", LogLevel.INFO)
+            addLog("💡 Szukam urządzeń z otwartym portem parowania (${PairingConfig.PAIRING_PORT})", LogLevel.INFO)
             
             // Pokaż kartę urządzeń
             runOnUiThread {
@@ -204,7 +205,7 @@ class PairingProgressActivity : AppCompatActivity() {
                 addLog("💡 Diagnostyka:", LogLevel.WARNING)
                 addLog("  - Sprawdź czy urządzenie dziecka ma włączone parowanie", LogLevel.WARNING)
                 addLog("  - Sprawdź czy oba urządzenia w tej samej sieci WiFi", LogLevel.WARNING)
-                addLog("  - Sprawdź czy port 8080 nie jest zablokowany", LogLevel.WARNING)
+                addLog("  - Sprawdź czy port ${PairingConfig.PAIRING_PORT} nie jest zablokowany", LogLevel.WARNING)
                 systemLogger.e(TAG, "Network scan found no devices with pairing port open")
                 throw IllegalStateException("Nie znaleziono urządzeń do sparowania")
             }
@@ -308,11 +309,11 @@ class PairingProgressActivity : AppCompatActivity() {
             addLog("💡 Sprawdź połączenie WiFi", LogLevel.WARNING)
             throw IllegalStateException("Brak adresu IP")
         }
-        addLog("📡 Adres IP: $localIp:8080", LogLevel.SUCCESS)
+        addLog("📡 Adres IP: $localIp:${PairingConfig.PAIRING_PORT}", LogLevel.SUCCESS)
         
         // Krok 3: Start serwera
         updateProgress("Uruchamianie serwera parowania...", 30)
-        addLog("🖥️ Uruchamianie serwera na porcie 8080...", LogLevel.INFO)
+        addLog("🖥️ Uruchamianie serwera na porcie ${PairingConfig.PAIRING_PORT}...", LogLevel.INFO)
         delay(500)
         addLog("✅ Serwer uruchomiony", LogLevel.SUCCESS)
         
