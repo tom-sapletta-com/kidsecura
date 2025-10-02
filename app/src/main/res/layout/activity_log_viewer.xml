@@ -4,6 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
+    android:background="@color/gray_900"
     android:padding="16dp">
 
     <!-- Header -->
@@ -20,7 +21,8 @@
             android:layout_weight="1"
             android:text="@string/logs_title"
             android:textSize="24sp"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+            android:textColor="@color/white" />
 
         <Button
             android:id="@+id/btnRefresh"
@@ -85,6 +87,7 @@
             android:layout_height="wrap_content"
             android:text="@string/filter_date"
             android:textSize="14sp"
+            android:textColor="@color/white"
             android:layout_marginEnd="8dp" />
 
         <Spinner
@@ -109,14 +112,14 @@
             android:layout_weight="1"
             android:text="@string/loading_logs"
             android:textSize="12sp"
-            android:textColor="@color/text_secondary" />
+            android:textColor="@color/gray_400" />
 
         <TextView
             android:id="@+id/tvLastUpdate"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textSize="12sp"
-            android:textColor="@color/text_secondary" />
+            android:textColor="@color/gray_400" />
 
     </LinearLayout>
 
