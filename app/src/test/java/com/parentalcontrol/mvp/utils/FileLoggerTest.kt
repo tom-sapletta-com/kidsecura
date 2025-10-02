@@ -5,6 +5,8 @@ import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestCoroutineDispatcher
 import kotlinx.coroutines.test.runBlockingTest
+import kotlinx.coroutines.*
+import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -41,12 +43,20 @@ class FileLoggerTest {
     @Test
     fun `should log suspicious content with correct format`() = testDispatcher.runBlockingTest {
         // Given
-        val content = "Suspicious test content"
         val appName = "TestApp"
-        val priority = "HIGH"
+        val packageName = "com.test.app"
+        val detectionType = "KEYWORD_MATCH"
+        val description = "Suspicious test content"
+        val confidence = 0.85f
 
         // When
-        fileLogger.logSuspiciousContent(content, appName, priority)
+        fileLogger.logSuspiciousContent(
+            appName = appName,
+            packageName = packageName,
+            detectionType = detectionType,
+            description = description,
+            confidence = confidence
+        )
 
         // Then - verify log entry was created (would need access to log file or internal state)
         // In a real implementation, we'd check the log file contents
@@ -54,27 +64,25 @@ class FileLoggerTest {
     }
 
     @Test
-    fun `should log app usage with correct format`() = testDispatcher.runBlockingTest {
+    fun `should log app activity with correct format`() = testDispatcher.runBlockingTest {
         // Given
         val appName = "TestApp"
         val packageName = "com.test.app"
-        val usageTimeMs = 5000L
 
         // When
-        fileLogger.logAppUsage(appName, packageName, usageTimeMs)
+        fileLogger.logAppActivity(appName, packageName)
 
         // Then
         assertTrue(true) // Placeholder - method should execute without errors
     }
 
     @Test
-    fun `should log system event with correct format`() = testDispatcher.runBlockingTest {
+    fun `should log service event with correct format`() = testDispatcher.runBlockingTest {
         // Given
-        val eventType = "DEVICE_UNLOCK"
-        val description = "Device unlocked by user"
+        val event = "SERVICE_STARTED"
 
         // When
-        fileLogger.logSystemEvent(eventType, description)
+        fileLogger.logServiceEvent(event)
 
         // Then
         assertTrue(true) // Placeholder - method should execute without errors
@@ -84,17 +92,21 @@ class FileLoggerTest {
     fun `should handle concurrent logging safely`() = testDispatcher.runBlockingTest {
         // Given - multiple concurrent log operations
         val logOperations = (1..10).map { index ->
-            async {
+            GlobalScope.async {
                 fileLogger.logSuspiciousContent(
-                    content = "Concurrent log entry $index",
                     appName = "TestApp$index",
-                    priority = "MEDIUM"
+                    packageName = "com.test.app$index",
+                    detectionType = "KEYWORD_MATCH",
+                    description = "Concurrent log entry $index",
+                    confidence = 0.5f
                 )
             }
         }
 
         // When - all operations complete
-        logOperations.forEach { it.await() }
+        runBlocking {
+            logOperations.forEach { it.await() }
+        }
 
         // Then - all operations should complete without errors
         assertTrue(true)
@@ -121,9 +133,11 @@ class FileLoggerTest {
         // When - log enough data to trigger rotation
         repeat(100) { index ->
             fileLogger.logSuspiciousContent(
-                content = "$largeContent - entry $index",
                 appName = "TestApp",
-                priority = "HIGH"
+                packageName = "com.test.app",
+                detectionType = "LARGE_CONTENT",
+                description = "$largeContent - entry $index",
+                confidence = 0.9f
             )
         }
 
@@ -132,12 +146,17 @@ class FileLoggerTest {
     }
 
     @Test
-    fun `should format timestamp correctly`() {
+    fun `should format timestamp correctly`() = testDispatcher.runBlockingTest {
         // Given - FileLogger instance
 
         // When - logging with timestamp
-        val testContent = "Test log with timestamp"
-        fileLogger.logSuspiciousContent(testContent, "TestApp", "LOW")
+        fileLogger.logSuspiciousContent(
+            appName = "TestApp",
+            packageName = "com.test.app",
+            detectionType = "TIMESTAMP_TEST",
+            description = "Test log with timestamp",
+            confidence = 0.3f
+        )
 
         // Then - verify timestamp format in log entry
         // Real implementation would check log file format
@@ -151,7 +170,13 @@ class FileLoggerTest {
         val appName = "TestApp with spaces & symbols"
 
         // When - logging special characters
-        fileLogger.logSuspiciousContent(specialContent, appName, "MEDIUM")
+        fileLogger.logSuspiciousContent(
+            appName = appName,
+            packageName = "com.test.special",
+            detectionType = "SPECIAL_CHARS",
+            description = specialContent,
+            confidence = 0.7f
+        )
 
         // Then - should handle encoding properly
         assertTrue(true) // Placeholder - should not crash
@@ -162,7 +187,7 @@ class FileLoggerTest {
         // Given - FileLogger with retention policy
 
         // When - triggering cleanup
-        fileLogger.cleanupOldLogs()
+        fileLogger.cleanOldLogs()
 
         // Then - verify old files are removed
         // Real implementation would check file system state
