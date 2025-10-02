@@ -102,10 +102,11 @@ class ComponentStateInstrumentedTest {
             val state = packageManager.getComponentEnabledSetting(aliasComponent)
             
             // Just verify the component exists and has a valid state
-            // Aliases can be in any state (ENABLED, DISABLED, DEFAULT)
+            // Valid states: 0 (DEFAULT), 1 (ENABLED), 2 (DISABLED), etc.
+            // State >= 0 means the component exists and is properly configured
             assertTrue(
-                "Alias $aliasName has invalid state: $state",
-                state >= PackageManager.COMPONENT_ENABLED_STATE_DISABLED
+                "Alias $aliasName has invalid state: $state (should be >= 0)",
+                state >= PackageManager.COMPONENT_ENABLED_STATE_DEFAULT
             )
         }
     }
