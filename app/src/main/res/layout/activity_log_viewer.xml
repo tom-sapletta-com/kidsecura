@@ -109,14 +109,14 @@
             android:layout_weight="1"
             android:text="@string/loading_logs"
             android:textSize="12sp"
-            android:textColor="@android:color/darker_gray" />
+            android:textColor="@color/text_secondary" />
 
         <TextView
             android:id="@+id/tvLastUpdate"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textSize="12sp"
-            android:textColor="@android:color/darker_gray" />
+            android:textColor="@color/text_secondary" />
 
     </LinearLayout>
 
@@ -150,7 +150,7 @@
             android:layout_height="wrap_content"
             android:text="@string/no_logs_found"
             android:textSize="16sp"
-            android:textColor="@android:color/darker_gray"
+            android:textColor="@color/text_secondary"
             android:gravity="center"
             android:layout_marginBottom="8dp" />
 
@@ -159,7 +159,7 @@
             android:layout_height="wrap_content"
             android:text="@string/no_logs_description"
             android:textSize="14sp"
-            android:textColor="@android:color/darker_gray"
+            android:textColor="@color/text_secondary"
             android:gravity="center" />
 
     </LinearLayout>

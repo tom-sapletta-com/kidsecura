@@ -80,7 +80,7 @@
                     android:layout_height="wrap_content"
                     android:text="@string/no_logs_yet"
                     android:textSize="14sp"
-                    android:textColor="@android:color/darker_gray"
+                    android:textColor="@color/text_secondary"
                     android:gravity="center"
                     android:visibility="visible" />
 
@@ -123,7 +123,7 @@
             android:text="🎯 DEMO: Wielojęzyczna Detekcja Słów Kluczowych"
             android:layout_marginBottom="8dp"
             android:textStyle="bold"
-            android:backgroundTint="@color/purple_500" />
+            android:backgroundTint="@color/info" />
 
         <!-- Second button row -->
         <LinearLayout
@@ -202,7 +202,7 @@
                 android:text="🕵️ Tryb Ukryty"
                 android:layout_marginEnd="4dp"
                 android:background="?android:attr/colorAccent"
-                android:textColor="@android:color/white" />
+                android:textColor="@color/md_theme_light_onPrimary" />
 
             <Button
                 android:id="@+id/btnStealthSettings"

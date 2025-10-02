@@ -53,7 +53,7 @@
                 android:layout_height="wrap_content"
                 android:text="17:52:15"
                 android:textSize="12sp"
-                android:textColor="@android:color/darker_gray" />
+                android:textColor="@color/text_secondary" />
 
         </LinearLayout>
 
@@ -64,7 +64,7 @@
             android:layout_height="wrap_content"
             android:text="Cyberprzemoc w WhatsApp"
             android:textSize="14sp"
-            android:textColor="@android:color/black"
+            android:textColor="@color/text_primary"
             android:layout_marginBottom="4dp" />
 
         <!-- Full content (expandable) -->
@@ -74,7 +74,7 @@
             android:layout_height="wrap_content"
             android:text="ALERT: Suspicious content detected..."
             android:textSize="12sp"
-            android:textColor="@android:color/darker_gray"
+            android:textColor="@color/text_secondary"
             android:fontFamily="monospace"
             android:maxLines="3"
             android:ellipsize="end"

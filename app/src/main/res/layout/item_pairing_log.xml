@@ -12,7 +12,7 @@
         android:layout_height="wrap_content"
         android:text="14:32:55"
         android:textSize="12sp"
-        android:textColor="@android:color/darker_gray"
+        android:textColor="@color/text_secondary"
         android:fontFamily="monospace"
         android:layout_marginEnd="8dp" />
 

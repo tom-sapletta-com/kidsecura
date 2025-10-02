@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="16dp"
-    android:background="@android:color/white">
+    android:background="@color/md_theme_light_background">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -37,7 +37,7 @@
                 android:text="⚙️ Ustawienia Analizy"
                 android:textSize="20sp"
                 android:textStyle="bold"
-                android:textColor="@android:color/black"
+                android:textColor="@color/md_theme_light_primary"
                 android:gravity="center" />
 
             <View
@@ -54,8 +54,8 @@
             android:textSize="18sp"
             android:textStyle="bold"
             android:padding="8dp"
-            android:background="@color/purple_200"
-            android:textColor="@android:color/white"
+            android:background="@color/md_theme_light_primary"
+            android:textColor="@color/md_theme_light_onPrimary"
             android:layout_marginBottom="12dp"/>
 
         <!-- Capture Interval -->
@@ -73,7 +73,7 @@
             android:layout_height="wrap_content"
             android:text="5 sekund"
             android:textSize="16sp"
-            android:textColor="@color/purple_500"
+            android:textColor="@color/md_theme_light_primary"
             android:gravity="center"
             android:padding="8dp"/>
 
@@ -121,7 +121,7 @@
             android:layout_height="wrap_content"
             android:text="Gdy włączone, aplikacja będzie analizować cały ekran we wszystkich aplikacjach"
             android:textSize="12sp"
-            android:textColor="@android:color/darker_gray"
+            android:textColor="@color/text_secondary"
             android:padding="8dp"
             android:layout_marginBottom="16dp"/>
 
@@ -150,7 +150,7 @@
             android:layout_height="wrap_content"
             android:text="Lokalizacja będzie wysyłana do telefonu rodzica razem z alertami"
             android:textSize="12sp"
-            android:textColor="@android:color/darker_gray"
+            android:textColor="@color/text_secondary"
             android:padding="8dp"
             android:layout_marginBottom="8dp"/>
 
@@ -167,7 +167,7 @@
             android:layout_height="wrap_content"
             android:text="Czas dziś: 0h 0min"
             android:textSize="16sp"
-            android:textColor="@color/purple_500"
+            android:textColor="@color/md_theme_light_primary"
             android:textStyle="bold"
             android:padding="12dp"
             android:gravity="center"
@@ -274,7 +274,7 @@
             android:textStyle="italic"
             android:gravity="center"
             android:padding="16dp"
-            android:textColor="@android:color/darker_gray"/>
+            android:textColor="@color/text_hint"/>
 
     </LinearLayout>
 </ScrollView>
