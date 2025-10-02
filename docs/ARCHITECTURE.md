@@ -155,6 +155,26 @@ Error Handling → Permission Request → Service Start → Device Pairing → C
 - **Memory Management**: Automatic cleanup and resource optimization
 - **Crash Recovery**: SystemLogger integration for automatic error recovery
 
+## 🔍 **Advanced Keywords Testing System**
+
+### **KeywordsTesterActivity Architecture**
+**KeywordsTesterActivity** zapewnia kompletny system testowania i zarządzania słowami kluczowymi:
+
+- **Real-time Analysis Engine**: Analiza tekstu w czasie rzeczywistym z debounce (300ms)
+- **Multi-level Threat Detection**: Automatyczne określanie poziomu zagrożenia (SAFE/LOW/MEDIUM/HIGH)
+- **Interactive Keywords Management**: CRUD operations z KeywordsAdapter i RecyclerView
+- **Priority Classification**: Wizualny system priorytetów z kolorową klasyfikacją
+- **Intelligent Suggestions**: Kontekstowe rekomendacje działań dla każdego poziomu zagrożenia
+- **Export & Persistence**: Integracja z PreferencesManager i możliwość eksportu
+
+### **Technical Implementation**
+```kotlin
+// Core Components
+KeywordsTesterActivity -> KeywordsAdapter -> PreferencesManager
+ThreatTestResult -> ThreatLevel.enum -> SuggestionsEngine
+LiveAnalysis.coroutines -> DebounceLogic -> UI.updates
+```
+
 ## 📱 **Multi-Device Communication**
 
 ### **Device Roles**

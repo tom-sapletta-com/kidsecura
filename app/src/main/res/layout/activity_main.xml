@@ -178,11 +178,11 @@
                 style="@style/Widget.Material3.Button.OutlinedButton" />
 
             <Button
-                android:id="@+id/btnKeywordsEditor"
+                android:id="@+id/btnKeywordsTester"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="@string/btn_keywords_editor"
+                android:text="🔍 Tester słów"
                 android:layout_marginStart="4dp"
                 style="@style/Widget.Material3.Button.OutlinedButton" />
 

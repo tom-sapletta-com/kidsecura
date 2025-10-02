@@ -173,18 +173,18 @@ class MainActivity : AppCompatActivity() {
                 startActivity(Intent(this@MainActivity, LogViewerActivity::class.java))
             }
             
-            // Edytor słów kluczowych - NOWY DIALOG zamiast problematycznego Activity
-            Log.d(TAG, "🔧 Setting up btnKeywordsEditor click listener - NEW DIALOG VERSION")
-            btnKeywordsEditor.setOnClickListener {
+            // Keywords Tester - Interaktywny tester słów kluczowych
+            Log.d(TAG, "🔍 Setting up btnKeywordsTester click listener")
+            btnKeywordsTester.setOnClickListener {
                 try {
-                    Log.d(TAG, "🔧 btnKeywordsEditor clicked - Opening new keywords dialog")
-                    systemLogger.logButtonClick("Słowa Kluczowe", "MainActivity", true)
-                    showKeywordsEditorDialog()
-                    Log.d(TAG, "✅ Keywords editor dialog shown successfully")
+                    Log.d(TAG, "🔍 btnKeywordsTester clicked - Opening Keywords Tester Activity")
+                    systemLogger.logButtonClick("Keywords Tester", "MainActivity", true)
+                    startActivity(Intent(this@MainActivity, KeywordsTesterActivity::class.java))
+                    Log.d(TAG, "✅ Keywords Tester Activity started successfully")
                 } catch (e: Exception) {
-                    Log.e(TAG, "❌ BŁĄD podczas otwierania dialog słów kluczowych", e)
-                    systemLogger.logButtonClick("Słowa Kluczowe", "MainActivity", false, e.message)
-                    Toast.makeText(this@MainActivity, "Błąd Słowa Kluczowe: ${e.message}", Toast.LENGTH_LONG).show()
+                    Log.e(TAG, "❌ BŁĄD podczas otwierania Keywords Tester", e)
+                    systemLogger.logButtonClick("Keywords Tester", "MainActivity", false, e.message)
+                    Toast.makeText(this@MainActivity, "Błąd Keywords Tester: ${e.message}", Toast.LENGTH_LONG).show()
                 }
             }
             
