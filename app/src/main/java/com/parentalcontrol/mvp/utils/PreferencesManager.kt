@@ -138,10 +138,6 @@ class PreferencesManager(context: Context) {
     fun isDemoModeEnabled(): Boolean = prefs.getBoolean("demo_mode_enabled", false)
     fun setDemoModeEnabled(enabled: Boolean) = prefs.edit().putBoolean("demo_mode_enabled", enabled).apply()
     
-    // ===== TTS MODE METHODS =====
-    
-    fun isTtsEnabled(): Boolean = prefs.getBoolean("tts_enabled", false)
-    fun setTtsEnabled(enabled: Boolean) = prefs.edit().putBoolean("tts_enabled", enabled).apply()
     
     fun getStealthLastAccess(): Long = prefs.getLong(KEY_STEALTH_LAST_ACCESS, 0L)
     fun setStealthLastAccess(timestamp: Long) = prefs.edit().putLong(KEY_STEALTH_LAST_ACCESS, timestamp).apply()

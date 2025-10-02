@@ -9,8 +9,6 @@ import android.media.projection.MediaProjectionManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.provider.Settings
 import android.util.Log
 import android.widget.Toast
@@ -22,6 +20,8 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.*
 import com.parentalcontrol.mvp.databinding.ActivityMainBinding
 import com.parentalcontrol.mvp.model.DeviceType
 import com.parentalcontrol.mvp.service.ScreenCaptureService
@@ -29,8 +29,6 @@ import com.parentalcontrol.mvp.utils.PreferencesManager
 import com.parentalcontrol.mvp.utils.FileLogger
 import com.parentalcontrol.mvp.utils.SystemLogger
 import com.parentalcontrol.mvp.messaging.MessagingIntegrationManager
-import kotlinx.coroutines.*
-import androidx.lifecycle.lifecycleScope
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
@@ -69,6 +67,20 @@ class MainActivity : AppCompatActivity() {
         } else {
             Toast.makeText(this, R.string.permission_denied, Toast.LENGTH_SHORT).show()
             updateUI(false)
+        }
+    }
+    
+    // ScreenReader launcher
+    private val screenReaderLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val data = result.data
+            if (data != null) {
+                startScreenReaderService(result.resultCode, data)
+            }
+        } else {
+            Toast.makeText(this, "Anulowano przechwytywanie ekranu dla TTS", Toast.LENGTH_SHORT).show()
         }
     }
     
@@ -525,7 +537,7 @@ class MainActivity : AppCompatActivity() {
                     ✅ Automatycznie stop po 30 sekundach
                     ✅ Lub możliwość zatrzymania ręcznego
                     
-                    🔊 Głośność będzie ustawiona na maksimum
+                    🔊 Uruchomi się dedykowany serwis TTS
                     
                     ⚠️ UWAGA: Może zakłócać inne dźwięki
                     
@@ -533,14 +545,12 @@ class MainActivity : AppCompatActivity() {
                 """.trimIndent())
                 .setPositiveButton("🔊 Rozpocznij Czytanie") { _, _ ->
                     try {
-                        // Włącz tryb TTS w preferencjach
-                        prefsManager.setTtsEnabled(true)
-                        
-                        // Uruchom z trybem TTS
-                        startTtsScreenCapture()
+                        // Uruchom dedykowany ScreenReader serwis
+                        val captureIntent = mediaProjectionManager.createScreenCaptureIntent()
+                        screenReaderLauncher.launch(captureIntent)
                         
                         Toast.makeText(this, 
-                            "🔊 SCREEN READER AKTYWNY\nAutomatyczny stop za 30s", 
+                            "🔊 SCREEN READER BĘDZIE URUCHOMIONY\nPo przyznaniu uprawnień", 
                             Toast.LENGTH_LONG).show()
                             
                     } catch (e: Exception) {
@@ -562,29 +572,30 @@ class MainActivity : AppCompatActivity() {
     }
     
     /**
-     * Uruchamia przechwytywanie ekranu z TTS
+     * Uruchamia dedykowany serwis ScreenReader
      */
-    private fun startTtsScreenCapture() {
+    private fun startScreenReaderService(resultCode: Int, data: Intent) {
         try {
-            Log.d(TAG, "🔊 startTtsScreenCapture() - TTS mode")
+            Log.d(TAG, "🔊 Starting ScreenReaderService")
+            systemLogger.i(TAG, "Starting ScreenReaderService with MediaProjection")
             
-            if (!isServiceRunning) {
-                // Poproś o pozwolenie na przechwytywanie ekranu
-                val captureIntent = mediaProjectionManager.createScreenCaptureIntent()
-                projectionLauncher.launch(captureIntent)
-                
-                // Automatyczny stop po 30 sekundach
-                Handler(Looper.getMainLooper()).postDelayed({
-                    stopScreenReader()
-                }, 30000)
-                
-            } else {
-                Toast.makeText(this, "⚠️ Monitoring już działa", Toast.LENGTH_SHORT).show()
+            val serviceIntent = Intent(this, com.parentalcontrol.mvp.service.ScreenReaderService::class.java).apply {
+                putExtra("RESULT_CODE", resultCode)
+                putExtra("DATA", data)
+                putExtra("READ_INTERVAL", 2) // 2 sekundy
+                putExtra("SPEECH_RATE", 1.0f) // Normalna prędkość
+                putExtra("LANGUAGE", "pl_PL") // Polski język
             }
             
+            startForegroundService(serviceIntent)
+            
+            Toast.makeText(this, "🔊 Screen Reader uruchomiony!\nAutomatyczny stop za 30s", Toast.LENGTH_LONG).show()
+            Log.d(TAG, "✅ ScreenReaderService started successfully")
+            
         } catch (e: Exception) {
-            Log.e(TAG, "❌ Error starting TTS screen capture", e)
-            throw e
+            Log.e(TAG, "❌ Error starting ScreenReaderService", e)
+            systemLogger.e(TAG, "Error starting ScreenReaderService", e)
+            Toast.makeText(this, "Błąd uruchamiania Screen Reader: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
     
@@ -595,13 +606,9 @@ class MainActivity : AppCompatActivity() {
         try {
             Log.d(TAG, "🛑 stopScreenReader() - Stopping TTS")
             
-            // Wyłącz tryb TTS
-            prefsManager.setTtsEnabled(false)
-            
-            // Zatrzymaj monitoring jeśli działa
-            if (isServiceRunning) {
-                stopMonitoring()
-            }
+            // Zatrzymaj ScreenReader serwis
+            val intent = Intent(this, com.parentalcontrol.mvp.service.ScreenReaderService::class.java)
+            stopService(intent)
             
             Toast.makeText(this, "🛑 Screen Reader zatrzymany", Toast.LENGTH_SHORT).show()
             systemLogger.i(TAG, "Screen Reader stopped")
