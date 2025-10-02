@@ -24,6 +24,9 @@ class IncidentManager(private val context: Context) {
     // FileLogger do zapisywania incydentów w logach
     private val fileLogger by lazy { FileLogger(context) }
     
+    // SystemLogger dla transparentnego logowania widocznego w MainActivity
+    private val systemLogger by lazy { com.parentalcontrol.mvp.utils.SystemLogger.getInstance(context) }
+    
     companion object {
         private const val TAG = "IncidentManager"
         private const val PREFS_NAME = "incident_manager_prefs"
