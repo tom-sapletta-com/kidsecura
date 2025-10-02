@@ -39,11 +39,15 @@ class PairingProgressActivity : AppCompatActivity() {
     private lateinit var progressBar: ProgressBar
     private lateinit var statusText: TextView
     private lateinit var recyclerLogs: RecyclerView
+    private lateinit var recyclerDevices: RecyclerView
+    private lateinit var cardDevices: com.google.android.material.card.MaterialCardView
     private lateinit var btnRetry: Button
     private lateinit var btnCancel: Button
     
     private val logsAdapter = PairingLogsAdapter()
+    private val devicesAdapter = NetworkDevicesAdapter()
     private val pairingSteps = mutableListOf<PairingStep>()
+    private val discoveredDevices = mutableListOf<NetworkScanner.NetworkDevice>()
     
     // Pairing parameters
     private var deviceType: DeviceType = DeviceType.CHILD
@@ -80,12 +84,17 @@ class PairingProgressActivity : AppCompatActivity() {
         progressBar = findViewById(R.id.progressBar)
         statusText = findViewById(R.id.statusText)
         recyclerLogs = findViewById(R.id.recyclerLogs)
+        recyclerDevices = findViewById(R.id.recyclerDevices)
+        cardDevices = findViewById(R.id.cardDevices)
         btnRetry = findViewById(R.id.btnRetry)
         btnCancel = findViewById(R.id.btnCancel)
         
-        // Setup RecyclerView
+        // Setup RecyclerViews
         recyclerLogs.layoutManager = LinearLayoutManager(this)
         recyclerLogs.adapter = logsAdapter
+        
+        recyclerDevices.layoutManager = LinearLayoutManager(this)
+        recyclerDevices.adapter = devicesAdapter
         
         // Button listeners
         btnRetry.setOnClickListener {
@@ -160,17 +169,30 @@ class PairingProgressActivity : AppCompatActivity() {
             addLog("🔍 Szybkie skanowanie sieci WiFi...", LogLevel.INFO)
             addLog("💡 Szukam urządzeń z otwartym portem parowania (8080)", LogLevel.INFO)
             
-            val devicesFound = mutableListOf<NetworkScanner.NetworkDevice>()
-            networkScanner.scanForPairingDevices { device ->
+            // Pokaż kartę urządzeń
+            runOnUiThread {
+                cardDevices.visibility = View.VISIBLE
+            }
+            
+            val devicesFound = networkScanner.scanForPairingDevices { device ->
                 lifecycleScope.launch {
-                    addLog("📱 Znaleziono: ${device.getDisplayName()}", LogLevel.SUCCESS)
-                    devicesFound.add(device)
+                    addLog("📱 Znaleziono: ${device.getDisplayName()} (${device.responseTime}ms)", LogLevel.SUCCESS)
+                    discoveredDevices.add(device)
+                    runOnUiThread {
+                        devicesAdapter.updateDevices(discoveredDevices)
+                    }
                 }
             }
             
+            addLog("🔍 Skanowanie zakończone: ${devicesFound.size} urządzeń", LogLevel.INFO)
+            
             if (devicesFound.isEmpty()) {
-                addLog("⚠️ Nie znaleziono urządzeń z portem parowania", LogLevel.WARNING)
-                addLog("💡 Sprawdź czy urządzenie dziecka ma włączone parowanie", LogLevel.WARNING)
+                addLog("❌ Nie znaleziono urządzeń z portem parowania", LogLevel.ERROR)
+                addLog("💡 Diagnostyka:", LogLevel.WARNING)
+                addLog("  - Sprawdź czy urządzenie dziecka ma włączone parowanie", LogLevel.WARNING)
+                addLog("  - Sprawdź czy oba urządzenia w tej samej sieci WiFi", LogLevel.WARNING)
+                addLog("  - Sprawdź czy port 8080 nie jest zablokowany", LogLevel.WARNING)
+                systemLogger.e(TAG, "Network scan found no devices with pairing port open")
                 throw IllegalStateException("Nie znaleziono urządzeń do sparowania")
             }
             
@@ -178,6 +200,7 @@ class PairingProgressActivity : AppCompatActivity() {
             val targetDevice = devicesFound.first()
             remoteIp = targetDevice.ip
             addLog("✅ Wybrano urządzenie: ${targetDevice.getDisplayName()}", LogLevel.SUCCESS)
+            systemLogger.i(TAG, "Selected device: IP=${targetDevice.ip}, hostname=${targetDevice.hostname}, responseTime=${targetDevice.responseTime}ms")
         }
         
         // Krok 4: Sprawdzenie IP
