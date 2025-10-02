@@ -54,20 +54,20 @@ class LogAdapter(private val context: Context) : ListAdapter<LogEntry, LogAdapte
             // Set colors based on type
             val (indicatorColor, typeColor) = when (logEntry.type) {
                 LogType.ALERT -> Pair(
-                    ContextCompat.getColor(context, android.R.color.holo_red_dark),
-                    ContextCompat.getColor(context, android.R.color.holo_red_dark)
+                    ContextCompat.getColor(context, R.color.danger),
+                    ContextCompat.getColor(context, R.color.danger_light)
                 )
                 LogType.APP_ACTIVITY -> Pair(
-                    ContextCompat.getColor(context, android.R.color.holo_blue_dark),
-                    ContextCompat.getColor(context, android.R.color.holo_blue_dark)
+                    ContextCompat.getColor(context, R.color.info),
+                    ContextCompat.getColor(context, R.color.info_light)
                 )
                 LogType.SERVICE -> Pair(
-                    ContextCompat.getColor(context, android.R.color.holo_green_dark),
-                    ContextCompat.getColor(context, android.R.color.holo_green_dark)
+                    ContextCompat.getColor(context, R.color.success),
+                    ContextCompat.getColor(context, R.color.success_light)
                 )
                 LogType.UNKNOWN -> Pair(
-                    ContextCompat.getColor(context, android.R.color.darker_gray),
-                    ContextCompat.getColor(context, android.R.color.darker_gray)
+                    ContextCompat.getColor(context, R.color.text_disabled),
+                    ContextCompat.getColor(context, R.color.gray_400)
                 )
             }
             

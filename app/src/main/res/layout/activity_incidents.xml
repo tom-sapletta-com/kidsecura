@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#f5f5f5">
+    android:background="@color/md_theme_light_background">
 
     <!-- Header -->
     <LinearLayout
@@ -12,7 +12,7 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:padding="16dp"
-        android:background="#E91E63"
+        android:background="@color/md_theme_light_primary"
         android:elevation="4dp">
 
         <ImageButton
@@ -22,7 +22,7 @@
             android:background="?android:attr/selectableItemBackgroundBorderless"
             android:src="@drawable/ic_arrow_back"
             android:contentDescription="Wstecz"
-            android:tint="@android:color/white" />
+            android:tint="@color/md_theme_light_onPrimary" />
 
         <TextView
             android:layout_width="0dp"
@@ -42,7 +42,7 @@
             android:background="?android:attr/selectableItemBackgroundBorderless"
             android:src="@drawable/ic_filter_list"
             android:contentDescription="Filtry"
-            android:tint="@android:color/white" />
+            android:tint="@color/md_theme_light_onPrimary" />
 
         <ImageButton
             android:id="@+id/btnRefresh"
@@ -51,7 +51,7 @@
             android:background="?android:attr/selectableItemBackgroundBorderless"
             android:src="@drawable/ic_refresh"
             android:contentDescription="Odśwież"
-            android:tint="@android:color/white" />
+            android:tint="@color/md_theme_light_onPrimary" />
 
     </LinearLayout>
 

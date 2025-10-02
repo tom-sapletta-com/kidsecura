@@ -77,8 +77,6 @@
             android:textSize="12sp"
             android:textColor="@color/gray_400"
             android:fontFamily="monospace"
-            android:maxLines="3"
-            android:ellipsize="end"
             android:visibility="gone" />
 
         <!-- Expand/Collapse button -->

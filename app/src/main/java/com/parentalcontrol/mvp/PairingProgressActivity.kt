@@ -1,6 +1,7 @@
 package com.parentalcontrol.mvp
 
 import android.os.Bundle
+import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
@@ -124,7 +125,19 @@ class PairingProgressActivity : AppCompatActivity() {
                 
             } catch (e: Exception) {
                 addLog("❌ Krytyczny błąd: ${e.message}", LogLevel.ERROR)
-                systemLogger.e(TAG, "Pairing failed", e)
+                addLog("", LogLevel.INFO)
+                addLog("📊 Szczegóły błędu:", LogLevel.ERROR)
+                addLog("  Typ: ${e.javaClass.simpleName}", LogLevel.ERROR)
+                addLog("  Komunikat: ${e.message}", LogLevel.ERROR)
+                addLog("  Urządzenie: $deviceType", LogLevel.DEBUG)
+                addLog("  IP: ${remoteIp ?: "nie ustawiony"}", LogLevel.DEBUG)
+                addLog("  Port: $remotePort", LogLevel.DEBUG)
+                addLog("  Kod: ${if (pairingCode.isNullOrEmpty()) "brak" else "****"}", LogLevel.DEBUG)
+                
+                // Stack trace do SystemLogger (nie pokazujemy użytkownikowi)
+                systemLogger.e(TAG, "Pairing failed with ${e.javaClass.simpleName}: ${e.message}", e)
+                systemLogger.e(TAG, "Pairing context: deviceType=$deviceType, remoteIp=$remoteIp, remotePort=$remotePort, hasCode=${!pairingCode.isNullOrEmpty()}")
+                
                 showError(e.message ?: "Nieznany błąd")
             }
         }
@@ -215,13 +228,23 @@ class PairingProgressActivity : AppCompatActivity() {
         val connectionTest = pairingService.testConnection(remoteIp!!, remotePort)
         if (!connectionTest) {
             addLog("❌ Nie można połączyć się z $remoteIp:$remotePort", LogLevel.ERROR)
-            addLog("💡 Sprawdź:", LogLevel.WARNING)
-            addLog("  - Czy oba urządzenia są w tej samej sieci WiFi", LogLevel.WARNING)
-            addLog("  - Czy firewall nie blokuje portu $remotePort", LogLevel.WARNING)
-            addLog("  - Czy urządzenie dziecka ma włączone parowanie", LogLevel.WARNING)
-            throw IllegalStateException("Nie można nawiązać połączenia")
+            systemLogger.e(TAG, "TCP connection failed: host=$remoteIp, port=$remotePort")
+            addLog("💡 Diagnostyka połączenia:", LogLevel.WARNING)
+            addLog("  - Docelowy host: $remoteIp", LogLevel.INFO)
+            addLog("  - Port: $remotePort", LogLevel.INFO)
+            addLog("  - Timeout: 5000ms", LogLevel.INFO)
+            addLog("", LogLevel.INFO)
+            addLog("🔧 Możliwe przyczyny:", LogLevel.WARNING)
+            addLog("  1. Urządzenia w różnych sieciach WiFi", LogLevel.WARNING)
+            addLog("  2. Firewall blokuje port $remotePort", LogLevel.WARNING)
+            addLog("  3. Urządzenie dziecka nie ma włączonego parowania", LogLevel.WARNING)
+            addLog("  4. Port $remotePort jest już zajęty na urządzeniu dziecka", LogLevel.WARNING)
+            addLog("  5. Routing sieciowy blokuje komunikację", LogLevel.WARNING)
+            systemLogger.e(TAG, "Connection test failed - possible causes: network mismatch, firewall, pairing not active, port in use, routing issues")
+            throw IllegalStateException("Nie można nawiązać połączenia TCP")
         }
         addLog("✅ Połączenie TCP udane", LogLevel.SUCCESS)
+        systemLogger.i(TAG, "TCP connection successful: $remoteIp:$remotePort")
         
         // Krok 5: Wymiana danych parowania
         updateProgress("Wymiana danych parowania...", 60)
@@ -477,11 +500,11 @@ class PairingProgressActivity : AppCompatActivity() {
             holder.message.text = step.message
             
             val (icon, color) = when (step.level) {
-                LogLevel.SUCCESS -> "✅" to android.graphics.Color.parseColor("#4CAF50")
-                LogLevel.ERROR -> "❌" to android.graphics.Color.parseColor("#F44336")
-                LogLevel.WARNING -> "⚠️" to android.graphics.Color.parseColor("#FF9800")
-                LogLevel.INFO -> "ℹ️" to android.graphics.Color.parseColor("#2196F3")
-                LogLevel.DEBUG -> "🔍" to android.graphics.Color.parseColor("#9E9E9E")
+                LogLevel.SUCCESS -> "✅" to android.graphics.Color.parseColor("#81C784")  // success_light
+                LogLevel.ERROR -> "❌" to android.graphics.Color.parseColor("#EF5350")    // danger_light
+                LogLevel.WARNING -> "⚠️" to android.graphics.Color.parseColor("#FFB74D")  // warning_light
+                LogLevel.INFO -> "ℹ️" to android.graphics.Color.parseColor("#4FC3F7")     // info_light
+                LogLevel.DEBUG -> "🔍" to android.graphics.Color.parseColor("#BDBDBD")    // gray_400
             }
             
             holder.icon.text = icon
@@ -489,5 +512,52 @@ class PairingProgressActivity : AppCompatActivity() {
         }
         
         override fun getItemCount() = logs.size
+    }
+    
+    // Network Devices Adapter
+    inner class NetworkDevicesAdapter : RecyclerView.Adapter<NetworkDevicesAdapter.ViewHolder>() {
+        
+        private var devices = listOf<NetworkScanner.NetworkDevice>()
+        
+        fun updateDevices(newDevices: List<NetworkScanner.NetworkDevice>) {
+            devices = newDevices
+            notifyDataSetChanged()
+        }
+        
+        inner class ViewHolder(view: android.view.View) : RecyclerView.ViewHolder(view) {
+            val deviceIcon: TextView = view.findViewById(R.id.tvDeviceIcon)
+            val deviceIp: TextView = view.findViewById(R.id.tvDeviceIp)
+            val deviceInfo: TextView = view.findViewById(R.id.tvDeviceInfo)
+            val deviceStatus: TextView = view.findViewById(R.id.tvDeviceStatus)
+        }
+        
+        override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int): ViewHolder {
+            val view = layoutInflater.inflate(R.layout.item_network_device, parent, false)
+            return ViewHolder(view)
+        }
+        
+        override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+            val device = devices[position]
+            
+            holder.deviceIp.text = device.ip
+            holder.deviceInfo.text = if (device.hostname != null) {
+                "${device.hostname} (${device.responseTime}ms)"
+            } else {
+                "Czas odpowiedzi: ${device.responseTime}ms"
+            }
+            
+            // Ikona i status w zależności od właściwości urządzenia
+            if (device.hasPairingPort) {
+                holder.deviceIcon.text = "📱"
+                holder.deviceStatus.text = "✓"
+                holder.deviceStatus.setTextColor(getColor(R.color.success))
+            } else {
+                holder.deviceIcon.text = "💻"
+                holder.deviceStatus.text = "—"
+                holder.deviceStatus.setTextColor(getColor(R.color.text_disabled))
+            }
+        }
+        
+        override fun getItemCount() = devices.size
     }
 }
